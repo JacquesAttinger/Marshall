@@ -68,6 +68,7 @@ export async function runDashboard(opts: DashboardOptions): Promise<void> {
     help: helpInfo(config, configPath),
     projects: { current: runningProject(), restarter: defaultRestarter() },
     log,
+    tailscaleUsers: config.tailscaleUsers,
   });
   const url = `http://127.0.0.1:${server.port}`;
   log.info("dashboard.started", { url });

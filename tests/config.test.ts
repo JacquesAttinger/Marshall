@@ -1,4 +1,4 @@
-// Last edited: 2026-10-03 18:27 CDT
+// Last edited: 2026-10-11 19:10 PDT
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
@@ -51,6 +51,7 @@ describe("parseConfig", () => {
     expect(config.handoffMinutes).toBe(10);
     expect(config.rateLimitProbeMinutes).toBe(30);
     expect(config.dashboardPort).toBe(7474);
+    expect(config.tailscaleUsers).toBeUndefined();
     expect(config.models).toEqual({
       classifier: "haiku",
       planSimple: "opus",
@@ -199,5 +200,15 @@ describe("requireLinearApiKey", () => {
   test("names the variable and .env.example when missing", () => {
     expect(() => requireLinearApiKey(loadEnv({}))).toThrow(/MARSHALL_LINEAR_API_KEY/);
     expect(() => requireLinearApiKey(loadEnv({}))).toThrow(/\.env\.example/);
+  });
+});
+
+describe("tailscaleUsers", () => {
+  test("tailscaleUsers is optional, a non-empty list of logins", () => {
+    expect(
+      parseConfig({ ...minimal(), tailscaleUsers: ["me@example.com"] }).tailscaleUsers,
+    ).toEqual(["me@example.com"]);
+    expect(() => parseConfig({ ...minimal(), tailscaleUsers: [] })).toThrow(/tailscaleUsers/);
+    expect(() => parseConfig({ ...minimal(), tailscaleUsers: [""] })).toThrow(/tailscaleUsers/);
   });
 });

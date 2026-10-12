@@ -1,4 +1,4 @@
-<!-- Last edited: 2026-10-08 13:57 CDT -->
+<!-- Last edited: 2026-10-11 19:10 PDT -->
 
 # Plan: Host Marshall on an Oracle Always Free VM
 
@@ -97,6 +97,8 @@ Run them on the VM as soon as it exists.
    After a day of failures, use the Azure fallback.
 3. Network: open inbound TCP 22 only.
    Marshall needs no inbound ports (Linear, GitHub, and ntfy are outbound HTTPS).
+   Tailscale (Step 10) needs none either: it connects outward.
+   The dashboard is never exposed on a public port.
 4. Add 4 GB of swap (`/swapfile`, kept in `/etc/fstab`).
    Three agents with builds can spike memory.
 
@@ -293,6 +295,20 @@ Do this in order:
    Copy it to Oracle Object Storage or to a private repo.
 3. Keep the Azure for Students account ready as a backup host.
 
+## Step 10: Open the dashboard from a phone (Tailscale)
+
+The dashboard listens on the VM's `127.0.0.1:7474` only.
+The Mac reaches it with `scripts/vm-dashboard.sh` (an SSH tunnel).
+For a phone, use Tailscale, a private network of your own devices.
+A public link is not wanted: the dashboard controls agents.
+
+1. `scripts/install-tailscale.sh` on the VM (Tailscale's official apt repository).
+2. By hand: `sudo tailscale up`, then turn on MagicDNS and HTTPS Certificates in the admin console.
+3. `scripts/tailscale-serve.sh` on the VM prints the `https://<vm>.<tailnet>.ts.net` URL.
+4. Optional: set `tailscaleUsers` in `marshall.vm.config.json` so only your login gets in.
+
+The exact steps, how to revoke a device, and what `tailscaleUsers` does are in `docs/dashboard.md`.
+
 ## Optional follow-up PR (separate, not required)
 
 A first-class Linux path, so `marshall start|stop|status` work on Linux:
@@ -333,4 +349,5 @@ A first-class Linux path, so `marshall start|stop|status` work on Linux:
 | Fork falls behind upstream | Agents branch from old code | Fast-forward the fork from the Mac before runs |
 | Token leak on a bypass-permissions host | Claude and GitHub abuse | Classic token with `repo` and `read:org` only (no `admin:org`, no Hemut SSO), `chmod 600`, single-purpose VM |
 | Two daemons running | Double claims | Cutover order in Step 8 |
+| Another device or person on the tailnet opens the dashboard | They can see issues and press Kill | `tailscaleUsers` (Step 10); never use `tailscale funnel` |
 | Oracle shrinks the free tier again | Less memory | Lower `maxAgents` in `marshall.config.json` |

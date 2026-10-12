@@ -1,6 +1,6 @@
 # Marshall dashboard
 
-<!-- Last edited: 2026-10-11 20:30 PDT -->
+<!-- Last edited: 2026-10-11 22:30 PDT -->
 
 **TLDR:** The dashboard is a small web page that shows what each Marshall agent does now.
 It runs on the laptop as its own program (`marshall dashboard`), so it stays up when the daemon stops.
@@ -225,12 +225,69 @@ Tap again within 4 seconds to send it.
 - Like Kill, the switch route checks the Host and Origin headers, so only this page can send it.
 
 To add a project from a terminal, see "Projects" in `docs/runbook.md`.
+To add one from the dashboard, see the next section.
+
+## Add a project from the dashboard
+
+Tap **Add project** in the header to point Marshall at a new project from your phone.
+It needs the project registry (`~/.marshall-projects`, see `src/projects.ts`).
+The dashboard must run on the machine that holds your repos (the VM), because it runs `gh` and `git` there.
+
+**What you need first.**
+Marshall cannot do these two things for you:
+
+1. Create a Linear workspace for the project.
+2. Create a personal API key in it: Settings, Account, Security & access, Personal API keys, New key.
+
+The VM also needs `gh` logged in to the GitHub account that will own the repo, and Claude Code run once (so `~/.claude.json` exists).
+
+**The form.**
+Enter a project name and paste the key, then tap **Check key**.
+The panel shows the Linear workspace and a team picker (a team is chosen for you when there is only one).
+Choose a new private repo (named, or the project id by default) or an existing repo (`owner/name` or an `https://github.com/owner/name` address), then tap **Create project**.
+
+**What Create does.**
+Each step shows a result line.
+The first failure stops the run.
+
+1. Check the Linear key: reads the workspace and teams. Stores nothing.
+2. Check the project name: a name that exists for another workspace or repo is refused.
+3. Save the key: writes `~/.marshall-projects/<id>/secrets.env`, mode 0600.
+4. Get the repo: `gh repo create <owner>/<name> --private --add-readme` for a new repo, then `gh repo clone` into `~/code/<name>`. Reads the default branch, which becomes the PR base.
+5. Set up Linear: the Needs Verification and Blocked states and the `marshall` labels (`ensureWorkspaceSetup`).
+6. Trust the repo in Claude Code's config.
+7. Write `~/.marshall-projects/<id>/config.json` and register the project.
+   The config starts from the active project's config, so limits you tuned carry over (and `sshCommand` and `dashboardPort`).
+   Only `workspace`, `teamId`, `repoPath` and `baseBranch` change.
+
+The new project is not made active, unless it is the first one.
+When it is not, the panel offers a **Switch** button: tap it twice, like the Switch button in the project menu (see "Switch project" above; it uses the same route and has the same refusals).
+Without that button (the dashboard is fixed by `MARSHALL_CONFIG`), use `marshall project use <id>`, then restart Marshall and the dashboard.
+
+**When a step fails.**
+Read the red line, fix the cause, paste the key again, and tap **Create project** again.
+Every step is safe to run twice: a step that is done says "Already done" and is skipped.
+
+| Step fails | Likely cause | Fix |
+|---|---|---|
+| Check the Linear key | Key copied in part, or revoked | Make a new key in Linear and paste all of it |
+| Check the project name | Same name used for another workspace or repo | Pick another name |
+| Get the repo, "Could not read the GitHub login" | `gh` is not logged in on the VM | Run `gh auth login` on the VM |
+| Get the repo, "already exists" | `~/code/<name>` is a different repo or not a git repo | Move that folder, or pick another repo name |
+| Get the repo, "Could not create" | The repo name is taken, or `gh` lacks the permission | Use "existing repo", or fix the `gh` login |
+| Set up Linear | The key lacks access to the team | Use a key from a member of that team |
+| Trust the repo | `~/.claude.json` is damaged | Fix the file, then run again |
+
+The key never appears in a log line, a result line, or `config.json`.
+Only `secrets.env` holds it.
+The dashboard log shows the project name and each step's result.
 
 ## Security
 
 - `127.0.0.1` only; the tailnet reaches it through `tailscale serve`.
 - Optional `tailscaleUsers`: only the listed Tailscale logins get in through the tailnet.
-- `Host` allow-list on every request; Kill also needs an `Origin` with the same host.
+- `Host` allow-list on every request; Kill and the add-project routes also need an `Origin` with the same host.
+- The add-project routes take small JSON bodies only (4 KB), run one create at a time (a second gets 409), and answer failures with a plain message.
 - Content Security Policy: scripts, styles, and requests only from the page itself; no frames.
 - Hand-off Markdown is rendered without raw HTML, without images, and with only `http(s)` and `#` links.
 - The dashboard never migrates the database.

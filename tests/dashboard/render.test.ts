@@ -12,11 +12,24 @@ import {
   formatTokens,
   prLabel,
 } from "../../src/dashboard/render/format.ts";
+import { type HelpInfo, helpCommands, renderHelp } from "../../src/dashboard/render/help.ts";
 import { renderNeedsYou } from "../../src/dashboard/render/needs-you.ts";
 import { renderPage, renderSections, sectionHashes } from "../../src/dashboard/render/page.ts";
 import { renderQueue } from "../../src/dashboard/render/queue.ts";
-import { renderStrip } from "../../src/dashboard/render/strip.ts";
+import { type ProjectInfo, renderStrip } from "../../src/dashboard/render/strip.ts";
 import { agent, card, NOW, queueReport, queueRow, strip } from "./fixtures.ts";
+
+const PROJECT: ProjectInfo = {
+  workspace: "tictactoe1514",
+  repo: "tic-tac-toe",
+  baseBranch: "main",
+};
+const HELP: HelpInfo = {
+  sshCommand: "ssh -i ~/.ssh/key ubuntu@203.0.113.7",
+  repoDir: "~/code/Project_Marshall",
+  configPath: "marshall.tictactoe.config.json",
+  platform: "linux",
+};
 
 describe("html", () => {
   test("escapes every interpolated value; nested html and raw pass through", () => {
@@ -81,7 +94,7 @@ describe("format", () => {
 
 describe("renderStrip", () => {
   test("running, counts, and the queue-empty badge", () => {
-    const out = String(renderStrip(strip({ queueEmpty: true }), NOW));
+    const out = String(renderStrip(strip({ queueEmpty: true }), NOW, PROJECT));
     expect(out).toContain("Daemon running");
     expect(out).toContain("1/3 agents · 4/10 today · 2/10 in 3 h window");
     expect(out).toContain("Queue empty");
@@ -94,11 +107,67 @@ describe("renderStrip", () => {
       pausedAt: new Date(2026, 8, 30, 10, 51).toISOString(),
       pausedUntil: new Date(2026, 9, 3, 16, 40).toISOString(),
     };
-    const out = String(renderStrip(s, NOW));
+    const out = String(renderStrip(s, NOW, PROJECT));
     expect(out).toContain("Daemon down");
     expect(out).toContain("Paused by hand since Sep 30 10:51");
     expect(out).toContain("Rate-limited until 16:40");
     expect(out).not.toContain("Queue empty");
+  });
+});
+
+describe("project chip", () => {
+  test("the strip names the repo, the Linear workspace, and the base branch", () => {
+    const out = String(renderStrip(strip(), NOW, PROJECT));
+    expect(out).toContain("<strong>tic-tac-toe</strong>");
+    expect(out).toContain("Linear tictactoe1514");
+    expect(out).toContain("PRs into main");
+  });
+
+  test("it escapes the names", () => {
+    const out = String(renderStrip(strip(), NOW, { ...PROJECT, repo: "<b>x</b>" }));
+    expect(out).toContain("&lt;b&gt;x&lt;/b&gt;");
+  });
+});
+
+describe("renderHelp", () => {
+  test("every Linux check runs over SSH, with this repo's config", () => {
+    const cmds = helpCommands(HELP).map((c) => c.command);
+    expect(cmds[0]).toBe(
+      "ssh -i ~/.ssh/key ubuntu@203.0.113.7 'systemctl --user is-active marshall'",
+    );
+    expect(cmds[1]).toContain("MARSHALL_CONFIG=marshall.tictactoe.config.json bin/marshall status");
+    expect(cmds[1]).toContain("cd ~/code/Project_Marshall");
+  });
+
+  test("without an ssh command the checks run on this machine", () => {
+    const cmds = helpCommands({ ...HELP, sshCommand: undefined }).map((c) => c.command);
+    expect(cmds[0]).toBe("systemctl --user is-active marshall");
+  });
+
+  test("a custom MARSHALL_HOME reaches the status command", () => {
+    const status = helpCommands({ ...HELP, marshallHome: "~/.marshall-x" })[1]?.command;
+    expect(status).toContain("MARSHALL_HOME=~/.marshall-x");
+  });
+
+  test("macOS gets launchd-free commands", () => {
+    const cmds = helpCommands({ ...HELP, platform: "darwin", sshCommand: undefined });
+    expect(cmds.some((c) => c.command.includes("systemctl"))).toBe(false);
+    expect(cmds[0]?.command).toContain("bin/marshall status");
+  });
+
+  test("the panel is a script-free <details> in the page header", () => {
+    const out = String(renderHelp(HELP));
+    expect(out.startsWith("<details")).toBe(true);
+    expect(out).not.toMatch(/<script|onclick=/);
+    const page = renderPage(
+      renderSections(
+        { kind: "no_db", problem: "missing", daemonRunning: false, now: "n" },
+        PROJECT,
+      ),
+      "n",
+      renderHelp(HELP),
+    );
+    expect(page).toContain('<div class="brand">Marshall<details class="help">');
   });
 });
 
@@ -259,8 +328,8 @@ describe("page", () => {
         queue: { report: queueReport([queueRow()]), fetchedAt: null, error: null },
       },
     };
-    const sections = renderSections(view, "w");
-    const page = renderPage(sections, NOW.toISOString());
+    const sections = renderSections(view, PROJECT);
+    const page = renderPage(sections, NOW.toISOString(), renderHelp(HELP));
     expect(page.startsWith("<!doctype html>")).toBe(true);
     expect(page).toContain('<script src="/assets/dashboard.js" defer></script>');
     expect(page).not.toMatch(/<script>|<style|style="|onclick=/);
@@ -274,13 +343,13 @@ describe("page", () => {
   test("a missing or outdated DB says to start the daemon", () => {
     const missing = renderSections(
       { kind: "no_db", problem: "missing", daemonRunning: false, now: NOW.toISOString() },
-      "w",
+      PROJECT,
     );
     expect(missing.needsYou).toContain("Start the daemon once");
     expect(missing.strip).toContain("Database not ready");
     const outdated = renderSections(
       { kind: "no_db", problem: "outdated", daemonRunning: true, now: NOW.toISOString() },
-      "w",
+      PROJECT,
     );
     expect(outdated.needsYou).toContain("older than this code");
   });

@@ -95,6 +95,13 @@ h2 {
   margin: 24px 0 10px;
 }
 
+summary {
+  cursor: pointer;
+  color: var(--link);
+  font-size: 14px;
+  padding: 4px 0;
+}
+
 .top {
   position: sticky;
   top: 0;
@@ -105,9 +112,100 @@ h2 {
 }
 
 .brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-weight: 700;
   font-size: 17px;
   margin-bottom: 6px;
+}
+
+.project {
+  margin: 0 0 6px;
+  font-size: 14px;
+}
+
+.project-meta {
+  color: var(--muted);
+  font-size: 13px;
+  margin-left: 6px;
+}
+
+.help {
+  position: relative;
+  margin-left: auto;
+  font-weight: 400;
+}
+
+.help summary {
+  list-style: none;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.help summary::-webkit-details-marker {
+  display: none;
+}
+
+.help[open] summary {
+  background: var(--link);
+  border-color: var(--link);
+  color: var(--bg);
+}
+
+.help-body {
+  position: absolute;
+  right: 0;
+  top: 34px;
+  width: min(560px, calc(100vw - 32px));
+  max-height: 70vh;
+  overflow: auto;
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
+  font-size: 14px;
+}
+
+.help-title {
+  margin: 0 0 8px;
+  font-weight: 700;
+}
+
+.help-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.help-list li {
+  margin-bottom: 12px;
+}
+
+.help-note {
+  display: block;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.help-list pre {
+  margin: 4px 0 0;
+  padding: 6px 8px;
+  background: var(--code-bg);
+  border-radius: 6px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  user-select: all;
 }
 
 .pills {
@@ -338,13 +436,6 @@ h2 {
 
 details {
   margin-top: 8px;
-}
-
-summary {
-  cursor: pointer;
-  color: var(--link);
-  font-size: 14px;
-  padding: 4px 0;
 }
 
 .handoff {

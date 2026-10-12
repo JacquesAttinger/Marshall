@@ -76,6 +76,11 @@ export const ConfigSchema = z
     portOffsetPerSlot: positiveInt.default(100),
     /** The dashboard's port on 127.0.0.1. `tailscale serve` forwards the tailnet to it. */
     dashboardPort: port.default(7474),
+    /**
+     * How to reach this machine from the laptop (`ssh -i ~/.ssh/key user@host`). The dashboard's
+     * help panel puts it in front of each check command. Unset: the commands run on this machine.
+     */
+    sshCommand: z.string().min(1).optional(),
   })
   .strict();
 

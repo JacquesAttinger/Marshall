@@ -1,4 +1,6 @@
-# Last edited: 2026-10-11 17:40 PDT
+# The project comes from the registry (marshall project use), so no config is set here. To pin this
+# unit to one file anyway, add Environment=MARSHALL_CONFIG=<path> (switching then changes nothing).
+# Last edited: 2026-10-11 20:30 PDT
 # The Marshall dashboard on the Oracle VM, as a systemd user unit next to marshall.service.
 # Install: cp this file to ~/.config/systemd/user/, then
 #   systemctl --user daemon-reload && systemctl --user enable --now marshall-dashboard
@@ -11,8 +13,7 @@ Wants=network-online.target
 [Service]
 WorkingDirectory=%h/code/Project_Marshall
 ExecStart=%h/.bun/bin/bun %h/code/Project_Marshall/bin/marshall dashboard
-EnvironmentFile=%h/.marshall-secrets.env
-Environment=MARSHALL_CONFIG=%h/code/Project_Marshall/marshall.vm.config.json
+EnvironmentFile=-%h/.marshall-secrets.env
 Environment=PATH=%h/.bun/bin:%h/.local/bin:/usr/local/bin:/usr/bin:/bin:/usr/games
 Restart=always
 RestartSec=10

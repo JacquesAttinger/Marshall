@@ -1,4 +1,4 @@
-// Last edited: 2026-10-03 18:27 CDT
+// Last edited: 2026-10-11 20:30 PDT
 // `marshall dashboard` — serve the dashboard on 127.0.0.1:<dashboardPort> until SIGINT or SIGTERM.
 // Its own process and launchd job, so the page stays up (and says "daemon down") when the daemon
 // stops. It never migrates the DB and works without a Linear key (the queue then says why).
@@ -8,10 +8,12 @@ import { basename, relative, resolve } from "node:path";
 import type { Config } from "../config.ts";
 import { loadConfig, loadEnv, resolveConfigPath } from "../config.ts";
 import { createDashboardContext } from "../dashboard/context.ts";
+import { defaultRestarter } from "../dashboard/project-routes.ts";
 import type { HelpInfo } from "../dashboard/render/help.ts";
 import { startDashboard } from "../dashboard/server.ts";
 import { createLogger } from "../log.ts";
 import { marshallHome } from "../paths.ts";
+import { getActive } from "../projects.ts";
 import { untilSignal } from "./run.ts";
 
 export interface DashboardOptions {
@@ -37,6 +39,15 @@ function helpInfo(config: Config, configPath: string): HelpInfo {
   };
 }
 
+/**
+ * The slug this dashboard runs on, or null when a fixed MARSHALL_CONFIG chose the config (the
+ * registry then has no say, so a switch would change nothing).
+ */
+function runningProject(): string | null {
+  const active = getActive();
+  return active && process.env.MARSHALL_CONFIG === active.configPath ? active.slug : null;
+}
+
 export async function runDashboard(opts: DashboardOptions): Promise<void> {
   const config = loadConfig(opts.configPath);
   const configPath = resolveConfigPath(opts.configPath);
@@ -55,6 +66,7 @@ export async function runDashboard(opts: DashboardOptions): Promise<void> {
       baseBranch: config.baseBranch,
     },
     help: helpInfo(config, configPath),
+    projects: { current: runningProject(), restarter: defaultRestarter() },
     log,
   });
   const url = `http://127.0.0.1:${server.port}`;

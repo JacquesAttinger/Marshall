@@ -1,4 +1,4 @@
-// Last edited: 2026-10-03 18:27 CDT
+// Last edited: 2026-10-11 20:30 PDT
 // The dashboard's long-lived state: one DB handle (opened without `migrate()`, so it never races
 // the daemon's migration at login), the 4 s section cache, the 60 s Linear cache, and the
 // hand-off reader. The server asks this module for data and never touches the DB itself.
@@ -45,6 +45,8 @@ export interface DashboardContext {
   /** The sanitized hand-off for an identifier, or null when there is none. */
   handoffHtml(identifier: string): string | null;
   kill(identifier: string): Promise<KillResult | { kind: "no_db" }>;
+  /** Claims that hold a slot right now, read fresh (not from the section cache). 0 with no DB. */
+  liveAgents(): number;
   close(): void;
 }
 
@@ -119,6 +121,10 @@ export function createDashboardContext(deps: ContextDeps): DashboardContext {
       const path = handoffPath(identifier.toUpperCase());
       if (!existsSync(path)) return null;
       return renderMarkdown(readFileSync(path, "utf8")).value;
+    },
+    liveAgents() {
+      const db = handle.get();
+      return typeof db === "string" ? 0 : liveClaims(db).length;
     },
     async kill(identifier) {
       const db = handle.get();

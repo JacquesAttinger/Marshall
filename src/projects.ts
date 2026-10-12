@@ -1,4 +1,4 @@
-// Last edited: 2026-10-11 20:00 PDT
+// Last edited: 2026-10-11 20:30 PDT
 // The project registry: which projects this machine can point Marshall at, and which one is active.
 // Machine-local state, never committed. Layout under `projectsRoot()`:
 //   projects.json          { active: "<slug>" | null, projects: ProjectRecord[] }
@@ -136,6 +136,19 @@ export function setActive(slug: string): ProjectRecord {
   registry.active = slug;
   writeRegistry(registry);
   return record;
+}
+
+/**
+ * The Linear workspace name in a project's config, or null when the file is missing or unreadable.
+ * Reads the raw JSONC and skips full validation, so a list still works when one repoPath is gone.
+ */
+export function projectWorkspace(record: Pick<ProjectRecord, "configPath">): string | null {
+  try {
+    const raw = Bun.JSONC.parse(readFileSync(record.configPath, "utf8")) as { workspace?: unknown };
+    return typeof raw.workspace === "string" && raw.workspace.length > 0 ? raw.workspace : null;
+  } catch {
+    return null;
+  }
 }
 
 /** Parse `KEY=value` lines. Blank lines and `#` comments are skipped; quotes are not interpreted. */

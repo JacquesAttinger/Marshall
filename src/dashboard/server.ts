@@ -1,4 +1,4 @@
-// Last edited: 2026-10-03 18:27 CDT
+// Last edited: 2026-10-11 20:30 PDT
 // The dashboard's HTTP server: `Bun.serve` on 127.0.0.1, reached from the phone through
 // `tailscale serve`. Every route runs behind one guard (Host allow-list, security headers, a
 // plain 500 on a throw); `routes` match before `fetch`, so a guard only in `fetch` would never
@@ -9,6 +9,13 @@ import type { Server } from "bun";
 import { type KillResult, killMessage, killSucceeded } from "../kill.ts";
 import type { Logger } from "../log.ts";
 import { type DashboardContext, IDENTIFIER } from "./context.ts";
+import { html } from "./html.ts";
+import {
+  createProjectSwitcher,
+  type ProjectSwitchOptions,
+  projectMenuHtml,
+  projectSwitchHandler,
+} from "./project-routes.ts";
 import { type HelpInfo, renderHelp } from "./render/help.ts";
 import { renderPage, renderSections, sectionHashes } from "./render/page.ts";
 import type { ProjectInfo } from "./render/strip.ts";
@@ -20,6 +27,8 @@ export interface DashboardServerOptions {
   context: DashboardContext;
   project: ProjectInfo;
   help: HelpInfo;
+  /** Unset: no project menu actions (tests that do not exercise switching). */
+  projects?: ProjectSwitchOptions;
   log: Logger;
 }
 
@@ -132,6 +141,9 @@ export function startDashboard(opts: DashboardServerOptions): Server<undefined> 
   const { context, project, log } = opts;
   const helpHtml = renderHelp(opts.help);
   const guard = (handler: Handler) => guarded(log, handler);
+  const switcher = opts.projects
+    ? createProjectSwitcher({ ...opts.projects, liveAgents: () => context.liveAgents(), log })
+    : null;
   const sectionsNow = async () => {
     const view = await context.view();
     const now = view.kind === "ok" ? view.data.now : view.now;
@@ -145,9 +157,12 @@ export function startDashboard(opts: DashboardServerOptions): Server<undefined> 
       "/": {
         GET: guard(async () => {
           const { sections, now } = await sectionsNow();
-          return new Response(renderPage(sections, now, helpHtml), {
-            headers: { "Content-Type": "text/html; charset=utf-8" },
-          });
+          return new Response(
+            renderPage(sections, now, html`${projectMenuHtml(opts.projects)}${helpHtml}`),
+            {
+              headers: { "Content-Type": "text/html; charset=utf-8" },
+            },
+          );
         }),
       },
       "/sections": {
@@ -164,6 +179,13 @@ export function startDashboard(opts: DashboardServerOptions): Server<undefined> 
         }),
       },
       "/kill/:identifier": { POST: guard(killHandler(opts)) },
+      "/project/switch/:slug": {
+        POST: guard(
+          projectSwitchHandler(switcher, (req) =>
+            originMatches(req.headers.get("origin"), req.headers.get("host")),
+          ),
+        ),
+      },
       "/assets/dashboard.js": {
         GET: guard(asset("dashboard.js", "text/javascript; charset=utf-8")),
       },

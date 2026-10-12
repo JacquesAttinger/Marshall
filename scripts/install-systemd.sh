@@ -9,7 +9,9 @@
 #        worktree would point the real daemon at a feature branch. It refuses to.
 # Secrets: put CLAUDE_CODE_OAUTH_TOKEN in ~/.marshall-secrets.env (chmod 600) and the Linear key in
 #        <repo>/.env. This script never reads either file.
-# Last edited: 2026-10-08 13:56 CDT
+# Project: by default the unit sets no config; the registry decides (marshall project use). Give
+#        MARSHALL_CONFIG (and optionally MARSHALL_HOME) to pin the unit to one file instead.
+# Last edited: 2026-10-11 20:30 PDT
 set -euo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
@@ -43,14 +45,23 @@ for pair in "bun:$BUN" "claude:$CLAUDE"; do
     exit 1
   fi
 done
-if [ ! -f "$REPO/.env" ]; then
-  echo "install-systemd.sh: $REPO/.env is missing; the daemon needs MARSHALL_LINEAR_API_KEY" >&2
-  exit 1
-fi
 
-CONFIG="${MARSHALL_CONFIG:-$REPO/marshall.config.json}"
-if [ ! -f "$CONFIG" ]; then
-  echo "install-systemd.sh: config file $CONFIG not found" >&2
+# Pinned: MARSHALL_CONFIG given, so the unit carries it. Otherwise the project registry decides.
+CONFIG="${MARSHALL_CONFIG:-}"
+PROJECTS_DIR="${MARSHALL_PROJECTS_DIR:-$HOME/.marshall-projects}"
+if [ -n "$CONFIG" ]; then
+  if [ ! -f "$CONFIG" ]; then
+    echo "install-systemd.sh: config file $CONFIG not found" >&2
+    exit 1
+  fi
+  if [ ! -f "$REPO/.env" ]; then
+    echo "install-systemd.sh: $REPO/.env is missing; the daemon needs MARSHALL_LINEAR_API_KEY" >&2
+    exit 1
+  fi
+elif [ ! -f "$PROJECTS_DIR/projects.json" ]; then
+  echo "install-systemd.sh: no project registry at $PROJECTS_DIR/projects.json." >&2
+  echo "  Register one first: bin/marshall project import --name <name> --key-from-env <config>" >&2
+  echo "  or install a pinned unit: MARSHALL_CONFIG=<config> scripts/install-systemd.sh" >&2
   exit 1
 fi
 
@@ -61,9 +72,17 @@ DAEMON_PATH="$(dirname "$BUN"):$(dirname "$CLAUDE"):/usr/local/bin:/usr/bin:/bin
 UNIT_DIR="$HOME/.config/systemd/user"
 UNIT="$UNIT_DIR/marshall.service"
 # Render. sed with | as the delimiter: none of the values may contain one (or an &).
+# The two env placeholders sit on lines of their own: filled when pinned, deleted otherwise.
 render() {
+  local config_sed="/^{{CONFIG_ENV}}\$/d" home_sed="/^{{HOME_ENV}}\$/d"
+  if [ -n "$CONFIG" ]; then
+    config_sed="s|^{{CONFIG_ENV}}\$|Environment=MARSHALL_CONFIG=$CONFIG|"
+    if [ -n "${MARSHALL_HOME:-}" ]; then
+      home_sed="s|^{{HOME_ENV}}\$|Environment=MARSHALL_HOME=$MARSHALL_HOME|"
+    fi
+  fi
   sed -e "s|{{BUN}}|$BUN|g" -e "s|{{REPO}}|$REPO|g" -e "s|{{CLAUDE}}|$CLAUDE|g" \
-    -e "s|{{CONFIG}}|$CONFIG|g" -e "s|{{PATH}}|$DAEMON_PATH|g" \
+    -e "s|{{PATH}}|$DAEMON_PATH|g" -e "$config_sed" -e "$home_sed" \
     "$REPO/scripts/systemd/marshall.service.template"
 }
 
@@ -87,7 +106,7 @@ fi
 echo "bun:    $BUN"
 echo "claude: $CLAUDE"
 echo "repo:   $REPO"
-echo "config: $CONFIG"
+echo "config: ${CONFIG:-from the project registry ($PROJECTS_DIR)}"
 echo "logs: journalctl --user -u marshall -f, and $HOME/.marshall/logs/marshall.log"
 echo
 echo "Check it with: bin/marshall status    Stop it with: systemctl --user stop marshall"

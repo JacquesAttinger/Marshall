@@ -6,7 +6,7 @@
 .addp-open {
   position: relative;
   margin-left: auto;
-  min-height: 32px;
+  height: 26px;
   padding: 0 12px;
   border: 1px solid var(--border);
   border-radius: 999px;
@@ -22,7 +22,7 @@
 .addp-open::after {
   content: "";
   position: absolute;
-  inset: -6px -4px;
+  inset: -9px -4px;
 }
 
 .addp-open ~ .help {
@@ -249,6 +249,12 @@
 
 .addp-open ~ .project-menu {
   margin-left: 8px;
+}
+
+/* Bare <details> carry a top margin; it pushed the menu and "?" below the button's centerline. */
+.brand > .project-menu,
+.brand > .help {
+  margin-top: 0;
 }
 
 .addp-switch {

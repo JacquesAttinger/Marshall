@@ -8,6 +8,7 @@ import { existsSync } from "node:fs";
 import type { Server } from "bun";
 import { parseConfig } from "../../src/config.ts";
 import { createDashboardContext, type DashboardContext } from "../../src/dashboard/context.ts";
+import type { ProjectSwitchOptions } from "../../src/dashboard/project-routes.ts";
 import { startDashboard } from "../../src/dashboard/server.ts";
 import { projectDir } from "../../src/projects.ts";
 import { recordingLogger, type TempHome, useTempHome } from "../helpers.ts";
@@ -23,7 +24,7 @@ let base: string;
 let host: string;
 let logLines: ReturnType<typeof recordingLogger>["lines"];
 
-function start(): void {
+function start(projects?: ProjectSwitchOptions): void {
   const config = parseConfig({ workspace: "w", teamId: "t", repoPath: home.dir });
   context = createDashboardContext({
     config,
@@ -42,6 +43,7 @@ function start(): void {
     help: { repoDir: "~/r", configPath: "c.json", platform: "linux" },
     log: logger.log,
     setupDeps: rig.deps,
+    projects,
   });
   host = `127.0.0.1:${server.port}`;
   base = `http://${host}`;
@@ -152,13 +154,25 @@ describe("POST /projects", () => {
   test("runs the pipeline and logs the project name and steps, not the key", async () => {
     const res = await post("/projects", newRepoInput());
     expect(res.status).toBe(200);
-    const body = (await res.json()) as { ok: boolean; steps: unknown[] };
+    const body = (await res.json()) as { ok: boolean; steps: unknown[]; canSwitch: boolean };
     expect(body.ok).toBe(true);
     expect(body.steps).toHaveLength(7);
+    expect(body.canSwitch).toBe(false);
     expect(JSON.stringify([body, logLines])).not.toContain(CANARY);
     const logged = logLines.find((l) => l.event === "dashboard.add_project");
     expect(logged?.fields.project).toBe("Tic Tac Toe");
     expect(existsSync(projectDir("tic-tac-toe"))).toBe(true);
+  });
+
+  test("canSwitch is true when the project menu's switch route works here", async () => {
+    await server.stop(true);
+    context.close();
+    start({
+      current: "other",
+      restarter: { automatic: false, restartDaemon: async () => {}, restartDashboard: () => {} },
+    });
+    const body = (await (await post("/projects", newRepoInput())).json()) as { canSwitch: boolean };
+    expect(body.canSwitch).toBe(true);
   });
 
   test("a hostile repo name is 400 with a plain message", async () => {

@@ -40,7 +40,7 @@ export function renderAddProject(): SafeHtml {
 <p id="addp-summary" class="addp-summary" role="status"></p>
 <div id="addp-switch" class="addp-switch" hidden>
 <p id="addp-switch-text" class="addp-switch-text"></p>
-<button type="button" class="switch" data-switch="">Switch</button>
+<button type="button" class="switch">Switch</button>
 <p class="note switch-msg" data-switch-msg role="status"></p>
 </div>
 </form>

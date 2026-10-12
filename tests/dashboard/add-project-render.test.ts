@@ -29,6 +29,12 @@ describe("renderAddProject", () => {
     expect(out).toMatch(/id="addp-create" disabled/);
   });
 
+  test("has a hidden Switch block that reuses the project menu's switch code", () => {
+    expect(out).toMatch(/id="addp-switch" class="addp-switch" hidden/);
+    expect(out).toContain("data-switch-msg");
+    expect(out).not.toContain("data-switch=");
+  });
+
   test("has no inline script, inline style, or event handler", () => {
     expect(out).not.toMatch(/<script|style=|\son[a-z]+=/i);
   });

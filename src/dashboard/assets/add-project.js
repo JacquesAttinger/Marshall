@@ -50,6 +50,7 @@ if (dialog) {
     stepsEl.replaceChildren();
     say(summary, "");
     switchBox.hidden = true;
+    switchBox.querySelector("button").removeAttribute("data-switch");
     say(switchMsg, "");
   }
 
@@ -117,14 +118,23 @@ if (dialog) {
   /** Success text, and for a project that is not active, a Switch button the dashboard's own switch code drives. */
   function showDone(data, name) {
     if (data.active) {
-      say(summary, "Project added. It is the active project. Restart Marshall and the dashboard to use it.", "ok");
+      say(
+        summary,
+        "Project added. It is the active project. Restart Marshall and the dashboard to use it.",
+        "ok",
+      );
     } else if (data.canSwitch) {
       say(summary, "Project added.", "ok");
-      $("addp-switch-text").textContent = `Switch to ${name} now? Marshall and the dashboard restart. Refused while agents are working.`;
+      $("addp-switch-text").textContent =
+        `Switch to ${name} now? Marshall and the dashboard restart. Refused while agents are working.`;
       switchBox.querySelector("button").dataset.switch = data.slug;
       switchBox.hidden = false;
     } else {
-      say(summary, "Project added, not active. Switch to it from the project menu after reloading this page.", "ok");
+      say(
+        summary,
+        "Project added, not active. Switch to it from the project menu after reloading this page.",
+        "ok",
+      );
     }
   }
 

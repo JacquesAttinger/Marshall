@@ -203,7 +203,8 @@ The first failure stops the run.
    Only `workspace`, `teamId`, `repoPath` and `baseBranch` change.
 
 The new project is not made active, unless it is the first one.
-Switch to it with the project switcher (or `marshall project use <id>`), then restart Marshall and the dashboard.
+When it is not, the panel offers a **Switch** button: tap it twice, like the Switch button in the project menu (see "Switch project" above; it uses the same route and has the same refusals).
+Without that button (the dashboard is fixed by `MARSHALL_CONFIG`), use `marshall project use <id>`, then restart Marshall and the dashboard.
 
 **When a step fails.**
 Read the red line, fix the cause, paste the key again, and tap **Create project** again.

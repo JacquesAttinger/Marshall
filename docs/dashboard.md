@@ -1,6 +1,6 @@
 # Marshall dashboard
 
-<!-- Last edited: 2026-10-11 18:40 PDT -->
+<!-- Last edited: 2026-10-11 19:10 PDT -->
 
 **TLDR:** The dashboard is a small web page that shows what each Marshall agent does now.
 It runs on the laptop as its own program (`marshall dashboard`), so it stays up when the daemon stops.
@@ -43,6 +43,7 @@ systemctl --user daemon-reload && systemctl --user enable --now marshall-dashboa
 ```
 
 The server listens on the VM's `127.0.0.1:7474` only.
+To open it from a phone, see the Tailscale section below.
 From the Mac, open an SSH tunnel and then the page:
 
 ```bash
@@ -57,24 +58,81 @@ The sections below about launchd and the Mac still describe the Mac install, for
 
 ## Open it on the phone (Tailscale)
 
-Tailscale makes a private network of your own devices.
+Tailscale makes a private network (a "tailnet") of your own devices.
 `tailscale serve` gives that network an HTTPS address for the local port.
 Only devices logged in to your Tailscale account can open it.
+It is not on the public internet: do not use `tailscale funnel`, which is public.
 
-One time:
+Marshall runs on the Oracle VM, so Tailscale goes on the VM and on the phone.
+Do these steps in order.
+Each step you do by hand is marked (you).
 
-1. Install Tailscale on the Mac (the macOS app, or `brew install tailscale`) and on the iPhone (App Store).
-2. Log in to the same account on both.
-3. In the Tailscale admin console, open **DNS** and turn on **HTTPS Certificates** (MagicDNS must be on too).
-4. On the Mac: `tailscale serve --bg 7474`.
-   `--bg` keeps the setting after a restart.
-5. `tailscale serve status` prints the address, `https://<mac-name>.<tailnet>.ts.net`.
-   Open it on the phone and add it to the home screen.
+1. (you) Make a free Tailscale account at <https://login.tailscale.com> if you have none.
+2. (you) Install the Tailscale app on the iPhone (App Store) and log in with that account.
+3. On the VM, install Tailscale from its official apt repository:
 
-To stop sharing it: `tailscale serve reset` (this removes every `serve` setting on the Mac).
+   ```bash
+   scripts/install-tailscale.sh --dry-run   # prints the steps, changes nothing
+   scripts/install-tailscale.sh
+   ```
+
+   It is safe to rerun.
+4. (you) On the VM: `sudo tailscale up`.
+   It prints a login URL.
+   Open it in a browser and approve the VM.
+5. (you) In the admin console (<https://login.tailscale.com/admin/dns>), turn on **MagicDNS**, then **HTTPS Certificates**.
+   `tailscale serve` needs both.
+6. On the VM, publish the dashboard:
+
+   ```bash
+   scripts/tailscale-serve.sh        # runs: tailscale serve --bg 7474
+   ```
+
+   Use `PORT=<n> scripts/tailscale-serve.sh` if `dashboardPort` is not 7474.
+   `--bg` keeps the setting after a reboot.
+   The script prints `tailscale serve status` last.
+7. Find the URL: it is the `https://<vm-name>.<tailnet>.ts.net` line in that output.
+   Run `tailscale serve status` on the VM any time to see it again.
+8. (you) On the phone, with the Tailscale app connected, open the URL in Safari.
+   Tap Share, then **Add to Home Screen**.
+   The app must be connected for the page to load.
+
+To stop sharing: `scripts/tailscale-serve.sh --reset` (this removes every `serve` setting on the machine).
+
+To revoke a device (a lost phone): open the admin console, **Machines**, find the device, open its menu, and choose **Remove**.
+A removed device cannot reach any tailnet address, including the dashboard.
+To lock the page to certain people instead of every device on the tailnet, set `tailscaleUsers` (next section).
+
+On the Mac, the same works: install the macOS app, log in, then `tailscale serve --bg 7474`.
 
 The server accepts only these `Host` names: `localhost`, `127.0.0.1`, and any `*.ts.net`.
 Other names get 403, so a web page that points its own domain at your laptop cannot read the dashboard (DNS rebinding).
+
+### Limit it to your own login (`tailscaleUsers`)
+
+By default any device on your tailnet can open the page.
+That matters if you share the tailnet, or share a device with someone.
+Add your login to `marshall.config.json`, then restart the dashboard:
+
+```jsonc
+"tailscaleUsers": ["you@example.com"]
+```
+
+What it does, on every route:
+
+- `tailscale serve` adds a `Tailscale-User-Login` header to each request from the tailnet.
+  It removes any copy of that header that the client sent.
+  A request whose login is not in the list gets 403.
+  The match ignores case.
+- A request to a `*.ts.net` name with no such header did not come through `tailscale serve`.
+  It gets 403.
+  Tagged devices send no header, so they are refused too.
+- Requests to `localhost` or `127.0.0.1` (the SSH tunnel) are not affected.
+- Unset, nothing is checked and behavior is unchanged.
+
+The list must not be empty.
+Tailscale documents the header at <https://tailscale.com/kb/1312/serve>.
+Check that it works: open the page on the phone (200), then remove your login from the list and restart: the page should say "Forbidden".
 
 ## What each section means
 
@@ -152,6 +210,7 @@ Use `marshall stop`, then Kill (or `marshall kill`) stops it directly.
 ## Security
 
 - `127.0.0.1` only; the tailnet reaches it through `tailscale serve`.
+- Optional `tailscaleUsers`: only the listed Tailscale logins get in through the tailnet.
 - `Host` allow-list on every request; Kill also needs an `Origin` with the same host.
 - Content Security Policy: scripts, styles, and requests only from the page itself; no frames.
 - Hand-off Markdown is rendered without raw HTML, without images, and with only `http(s)` and `#` links.

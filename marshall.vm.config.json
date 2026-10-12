@@ -1,4 +1,4 @@
-// Last edited: 2026-10-06 16:15 CDT
+// Last edited: 2026-10-11 19:10 PDT
 // Marshall's settings for the Oracle VM (docs/oracle_hosting_plan.md). The VM runs this file, the Mac runs
 // marshall.config.json: set MARSHALL_CONFIG to this path in the systemd unit. Comments are allowed (JSONC);
 // secrets go in .env, not in this file.
@@ -81,4 +81,7 @@
   // --- The dashboard (`marshall dashboard`, docs/dashboard.md) ---
   // Port on 127.0.0.1 only. The phone reaches it through `tailscale serve --bg <port>`.
   "dashboardPort": 7474
+  // To restrict the page to your own Tailscale login(s), add after "dashboardPort" (needs a comma):
+  //   "tailscaleUsers": ["you@example.com"]
+  // Unset: any device on your tailnet can open it. See docs/dashboard.md.
 }

@@ -1,4 +1,4 @@
-// Last edited: 2026-10-03 18:27 CDT
+// Last edited: 2026-10-11 19:10 PDT
 // `marshall dashboard` — serve the dashboard on 127.0.0.1:<dashboardPort> until SIGINT or SIGTERM.
 // Its own process and launchd job, so the page stays up (and says "daemon down") when the daemon
 // stops. It never migrates the DB and works without a Linear key (the queue then says why).
@@ -56,6 +56,7 @@ export async function runDashboard(opts: DashboardOptions): Promise<void> {
     },
     help: helpInfo(config, configPath),
     log,
+    tailscaleUsers: config.tailscaleUsers,
   });
   const url = `http://127.0.0.1:${server.port}`;
   log.info("dashboard.started", { url });

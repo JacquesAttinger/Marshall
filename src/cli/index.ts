@@ -1,6 +1,7 @@
-// Last edited: 2026-10-03 18:27 CDT
+// Last edited: 2026-10-11 20:30 PDT
 // Hand-rolled dispatch. No CLI dependency. `bin/marshall` imports this file.
 
+import { applyActiveProject } from "../projects.ts";
 import { runStart, runStop } from "./daemon.ts";
 import { runDashboard } from "./dashboard.ts";
 import { runMigrate } from "./db.ts";
@@ -11,6 +12,7 @@ import { runLogs } from "./logs.ts";
 import { runNotifyTest } from "./notify.ts";
 import { runPause, runResume } from "./pause.ts";
 import { runPlan, runPlanCheck } from "./plan.ts";
+import { runProjectImport, runProjectList, runProjectUse } from "./project.ts";
 import { runQueue } from "./queue.ts";
 import { runLoop } from "./run.ts";
 import { runStatus } from "./status.ts";
@@ -37,12 +39,20 @@ Commands:
                       issue would or would not start now. Never writes.
   run [--once]        Run the orchestrator: reconcile, then poll Linear and drive the master
                       agents until Ctrl-C. --once does one reconcile + tick and exits.
+  project list [--json]
+                      The registered projects; * marks the active one
+  project use <slug>  Make a project active. Restart the services to switch.
+  project import --name <name> [--home <dir>] [--key-from-env] <config-path>
+                      Register an existing config file as a project, in place
   dashboard           Serve the web dashboard on 127.0.0.1:<dashboardPort> until Ctrl-C
                       (docs/dashboard.md; launchd runs it as its own job)
 
 Options:
   --config <path>     Config file (default: MARSHALL_CONFIG or ./marshall.config.json)
   --cwd <path>        Worktree the planner runs in (plan only)
+  --name <name>       Project name (project import only)
+  --home <dir>        The project's MARSHALL_HOME (project import only)
+  --key-from-env      Copy MARSHALL_LINEAR_API_KEY from the environment (project import only)
   --revise            Revise an existing plan after a bounce (plan only)
   --once              One pass, then exit (run only)
   -h, --help          Show this help`;
@@ -53,18 +63,30 @@ interface Parsed {
   help: boolean;
   revise: boolean;
   once: boolean;
+  keyFromEnv: boolean;
   configPath?: string;
   cwd?: string;
+  name?: string;
+  home?: string;
 }
 
 /** Options that take a value: `--name value` or `--name=value`. */
-const VALUE_OPTIONS: Record<string, keyof Pick<Parsed, "configPath" | "cwd">> = {
+const VALUE_OPTIONS: Record<string, keyof Pick<Parsed, "configPath" | "cwd" | "name" | "home">> = {
   "--config": "configPath",
   "--cwd": "cwd",
+  "--name": "name",
+  "--home": "home",
 };
 
 export function parseArgs(argv: string[]): Parsed {
-  const out: Parsed = { positional: [], json: false, help: false, revise: false, once: false };
+  const out: Parsed = {
+    positional: [],
+    json: false,
+    help: false,
+    revise: false,
+    once: false,
+    keyFromEnv: false,
+  };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i] as string;
     const [flag, inline] = a.includes("=")
@@ -73,11 +95,12 @@ export function parseArgs(argv: string[]): Parsed {
     const key = VALUE_OPTIONS[flag];
     if (key) {
       const value = inline ?? argv[++i];
-      if (!value) throw new Error(`${flag} needs a path`);
+      if (!value) throw new Error(`${flag} needs a ${flag === "--name" ? "value" : "path"}`);
       out[key] = value;
     } else if (a === "--json") out.json = true;
     else if (a === "--revise") out.revise = true;
     else if (a === "--once") out.once = true;
+    else if (a === "--key-from-env") out.keyFromEnv = true;
     else if (a === "-h" || a === "--help") out.help = true;
     else if (a.startsWith("-")) throw new Error(`Unknown option: ${a}`);
     else out.positional.push(a);
@@ -131,6 +154,18 @@ const COMMANDS: Record<string, Command> = {
     arity: 0,
     run: async (args) => void (await runQueue({ json: args.json, configPath: args.configPath })),
   },
+  "project list": { arity: 0, run: (args) => runProjectList(args.json) },
+  "project use": { arity: 1, run: (_args, [slug]) => runProjectUse(slug as string) },
+  "project import": {
+    arity: 1,
+    run: (args, [configPath]) =>
+      runProjectImport({
+        name: args.name,
+        configPath,
+        home: args.home,
+        keyFromEnv: args.keyFromEnv,
+      }),
+  },
   dashboard: {
     arity: 0,
     run: async (args) => void (await runDashboard({ configPath: args.configPath })),
@@ -174,6 +209,9 @@ export async function dispatch(argv: string[]): Promise<number> {
     console.error(USAGE);
     return 2;
   }
+  // `project` commands manage the registry and read the raw environment (`--key-from-env`), so
+  // they run before any project is applied; `project use` applies the active one itself.
+  if (args.positional[0] !== "project") applyActiveProject(process.env, args.configPath);
   return (await found.command.run(args, found.rest)) ?? 0;
 }
 

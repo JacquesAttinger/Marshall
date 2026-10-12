@@ -1,4 +1,4 @@
-/* Last edited: 2026-10-03 18:34 CDT
+/* Last edited: 2026-10-11 20:30 PDT
    The dashboard's only stylesheet. Phone first: one column with a 16 px gutter, two columns from
    960 px (Needs you left; Agents and Queue right). Light and dark follow the system. State colors:
    amber = needs you, red = blocked or an armed Kill, green = running. */
@@ -112,6 +112,7 @@ summary {
 }
 
 .brand {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -206,6 +207,123 @@ summary {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   user-select: all;
+}
+
+/* Project menu: the button sits left of the "?" and the panel hangs off the whole brand row. */
+.project-menu {
+  margin-left: auto;
+  min-width: 0;
+  font-weight: 400;
+}
+
+.project-menu + .help {
+  margin-left: 0;
+}
+
+.project-menu-btn {
+  list-style: none;
+  max-width: 55vw;
+  height: 26px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 24px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.project-menu-btn::-webkit-details-marker {
+  display: none;
+}
+
+.project-menu-btn::after {
+  content: " ▾";
+  color: var(--muted);
+}
+
+.project-menu[open] .project-menu-btn {
+  border-color: var(--link);
+}
+
+.project-menu-body {
+  position: absolute;
+  right: 0;
+  top: 34px;
+  width: min(420px, calc(100vw - 32px));
+  max-height: 70vh;
+  overflow: auto;
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
+  font-size: 14px;
+}
+
+.project-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.project-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.project-row:last-child {
+  border-bottom: 0;
+}
+
+.project-row-main {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.switch {
+  flex: none;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  min-height: 36px;
+  padding: 6px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--link);
+  cursor: pointer;
+}
+
+.switch.armed {
+  background: var(--bad-solid);
+  border-color: var(--bad-solid);
+  color: #fff;
+}
+
+.switch:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.switch-msg {
+  margin: 8px 0 0;
+}
+
+.switch-msg:empty {
+  display: none;
+}
+
+.switch-msg.bad {
+  color: var(--bad);
 }
 
 .pills {

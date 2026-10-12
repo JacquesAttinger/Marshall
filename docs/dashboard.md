@@ -1,6 +1,6 @@
 # Marshall dashboard
 
-<!-- Last edited: 2026-10-11 19:10 PDT -->
+<!-- Last edited: 2026-10-11 20:30 PDT -->
 
 **TLDR:** The dashboard is a small web page that shows what each Marshall agent does now.
 It runs on the laptop as its own program (`marshall dashboard`), so it stays up when the daemon stops.
@@ -143,6 +143,8 @@ The page refreshes every 5 seconds while the tab is visible.
 
 - Under the page title, **Project `<repo>`** says which repo Marshall edits, which Linear workspace it watches, and which branch PRs go into.
   It comes from the config the dashboard started with, so after a config change restart the dashboard and reload the tab.
+- The project button at the top right names the active project and opens the project menu: every registered project, with a **Switch** button on the others.
+  See "Switch project" below.
 - The **?** button at the top right opens a list of terminal commands that check on Marshall: is it running, full status, recent log lines, restart.
   Set `sshCommand` in the config (for example `ssh -i ~/.ssh/key ubuntu@host`) and each command is shown ready to paste on your laptop.
   Without it, the commands are plain and run on the machine that serves the dashboard.
@@ -206,6 +208,23 @@ Kill does the same as `marshall kill`:
 
 Kill is not offered on a conflict resolver (phase "Resolving conflicts"): the orchestrator builds no agent for it, so the flag would be dropped.
 Use `marshall stop`, then Kill (or `marshall kill`) stops it directly.
+
+## Switch project
+
+Tap **Switch** next to a project in the project menu: the button turns red and says "Tap again to switch".
+Tap again within 4 seconds to send it.
+
+- If any agent is live in the current project, the switch is refused (HTTP 409) and the menu says how many agents are still working.
+  Nothing changes.
+  Wait for them to finish and try again.
+- Otherwise the dashboard makes the project active, restarts `marshall`, and then restarts itself.
+  The page says "Switching…", waits until the dashboard answers again, and reloads on the new project.
+  This needs Linux and a dashboard started by systemd (`Restart=always` brings it back).
+- On macOS, or when the dashboard was started by hand, it only records the switch and says to restart Marshall and the dashboard yourself.
+- If the units set `MARSHALL_CONFIG`, the config is fixed and the menu lists the projects without Switch buttons.
+- Like Kill, the switch route checks the Host and Origin headers, so only this page can send it.
+
+To add a project from a terminal, see "Projects" in `docs/runbook.md`.
 
 ## Security
 

@@ -1,6 +1,6 @@
 # Marshall runbook
 
-<!-- Last edited: 2026-10-08 13:57 CDT -->
+<!-- Last edited: 2026-10-11 20:30 PDT -->
 
 **TLDR:** Marshall runs as a launchd agent on the desk laptop.
 `scripts/install-launchd.sh` installs it, `marshall status` and the dashboard show what it is doing, `marshall stop` / `start` / `pause` / `resume` / `kill` control it, and ntfy pushes tell your phone when an issue needs you.
@@ -37,12 +37,61 @@ State under `~/.marshall` stays.
 launchd is macOS-only.
 On Linux, run `bash scripts/install-systemd.sh` from the main checkout instead.
 It renders `scripts/systemd/marshall.service.template` into a systemd user service and starts it.
-Set `MARSHALL_CONFIG` first if the host uses another config file, and run `sudo loginctl enable-linger $USER` once so the service starts at boot.
+The unit sets no project: the project registry decides (see "Projects" below).
+Give the installer `MARSHALL_CONFIG=<file>` only to pin the unit to one config; then switching projects changes nothing.
+Run `sudo loginctl enable-linger $USER` once so the service starts at boot.
 `marshall start` and `marshall stop` do not work on Linux, and `marshall status` shows `launchd is macOS-only`.
 Use `systemctl --user start|stop|restart|status marshall` instead.
 `KillMode=process` in the unit keeps live agents running through a restart.
 One known gap: a restart during the planning phase starts a second planner for the same issue.
 `docs/oracle_hosting_plan.md` has the full Oracle VM setup and test results.
+
+## Projects
+
+Marshall keeps a registry of projects in `~/.marshall-projects` (set `MARSHALL_PROJECTS_DIR` to move it).
+Each project has a config file, its own state folder (`MARSHALL_HOME`), and a `secrets.env` with its Linear key.
+One project is active.
+Every `marshall` command, the daemon, and the dashboard point at the active project unless you pass `--config` or set `MARSHALL_CONFIG`.
+
+```bash
+bin/marshall project list                  # * marks the active project
+bin/marshall project use <slug>            # change the active project, then restart the services
+bin/marshall project import --name <name> [--home <dir>] [--key-from-env] <config-path>
+```
+
+`project import` registers a config file where it is.
+It does not copy or move it.
+`--key-from-env` copies `MARSHALL_LINEAR_API_KEY` from your environment into the project's `secrets.env` (mode 0600).
+The key is never printed.
+
+### Switch from the dashboard
+
+Open the project menu in the dashboard header, tap **Switch** on a project, then tap again to confirm.
+The dashboard refuses while any agent is live in the current project (it says how many), so no agent loses its daemon.
+Wait for the agents to finish, then switch.
+On a Linux VM under systemd, a switch restarts `marshall`, then the dashboard restarts itself and the page reloads when it is back (about 10 seconds).
+On macOS, or when the dashboard was not started by systemd, it only records the switch and tells you to restart by hand.
+
+### Migrate the Oracle VM (one time)
+
+Before this change the units named the tic-tac-toe config.
+Run these on the VM:
+
+```bash
+cd ~/code/Project_Marshall && git pull
+set -a; . ~/.marshall-secrets.env; set +a     # puts MARSHALL_LINEAR_API_KEY in the environment
+bin/marshall project import --name tic-tac-toe --home ~/.marshall-tictactoe --key-from-env marshall.tictactoe.config.json
+bin/marshall project list                     # tic-tac-toe is active
+```
+
+Then delete the two `Environment=MARSHALL_CONFIG=...` and `Environment=MARSHALL_HOME=...` lines from `~/.config/systemd/user/marshall.service` and from `marshall-dashboard.service` (the dashboard unit may only have the config line), and restart:
+
+```bash
+systemctl --user daemon-reload && systemctl --user restart marshall marshall-dashboard
+```
+
+Check that `bin/marshall status` shows the tic-tac-toe workspace and `~/.marshall-tictactoe`.
+If a unit still sets `MARSHALL_CONFIG`, the dashboard menu says it is fixed to one config and cannot switch.
 
 ## Start, stop, pause, resume, kill
 
@@ -95,7 +144,7 @@ After you pull new code, restart it so it serves the new version:
 launchctl kickstart -k gui/$(id -u)/com.jacques.marshall-dashboard
 ```
 
-It reads `marshall.config.json` once at start, so restart it after a config change too.
+It reads the active project's config once at start, so restart it after a config change or a project switch too.
 
 ## Where state lives
 

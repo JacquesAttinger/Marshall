@@ -218,6 +218,7 @@ describe("kill", () => {
           release = () => resolve({ kind: "already_requested", identifier: "TOD-1" });
         });
       },
+      liveAgents: () => 0,
       close: () => {},
     };
     start(fake);
@@ -272,6 +273,7 @@ describe("pages and errors", () => {
       },
       handoffHtml: () => null,
       kill: async () => ({ kind: "no_db" }),
+      liveAgents: () => 0,
       close: () => {},
     };
     start(fake);

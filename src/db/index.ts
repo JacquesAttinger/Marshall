@@ -1,4 +1,4 @@
-// Last edited: 2026-09-20 12:25 CDT
+// Last edited: 2026-10-11 19:45 PDT
 // SQLite via bun:sqlite. Numbered SQL migrations tracked with PRAGMA user_version.
 
 import { Database } from "bun:sqlite";
@@ -35,6 +35,22 @@ export function openDb(path: string = dbPath()): Database {
   db.run("PRAGMA journal_mode = WAL");
   db.run("PRAGMA foreign_keys = ON");
   db.run(`PRAGMA busy_timeout = ${BUSY_TIMEOUT_MS}`);
+  return db;
+}
+
+/**
+ * `openDb`, then bring the schema up to date. A new project's home starts with an empty database
+ * file; anything that prepares a statement on it before the tables exist (the run watcher does)
+ * fails with `no such table`. Open it this way whenever the file may be new.
+ */
+export function openMigratedDb(path: string = dbPath()): Database {
+  const db = openDb(path);
+  try {
+    migrate(db);
+  } catch (err) {
+    db.close();
+    throw err;
+  }
   return db;
 }
 

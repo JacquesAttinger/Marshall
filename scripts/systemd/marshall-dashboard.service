@@ -1,0 +1,21 @@
+# Last edited: 2026-10-11 17:40 PDT
+# The Marshall dashboard on the Oracle VM, as a systemd user unit next to marshall.service.
+# Install: cp this file to ~/.config/systemd/user/, then
+#   systemctl --user daemon-reload && systemctl --user enable --now marshall-dashboard
+# It listens on 127.0.0.1:<dashboardPort> only. Reach it with an SSH tunnel (docs/dashboard.md).
+[Unit]
+Description=Marshall dashboard
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+WorkingDirectory=%h/code/Project_Marshall
+ExecStart=%h/.bun/bin/bun %h/code/Project_Marshall/bin/marshall dashboard
+EnvironmentFile=%h/.marshall-secrets.env
+Environment=MARSHALL_CONFIG=%h/code/Project_Marshall/marshall.vm.config.json
+Environment=PATH=%h/.bun/bin:%h/.local/bin:/usr/local/bin:/usr/bin:/bin:/usr/games
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=default.target

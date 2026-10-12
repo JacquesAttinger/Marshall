@@ -1,6 +1,6 @@
 # Marshall dashboard
 
-<!-- Last edited: 2026-10-03 18:30 CDT -->
+<!-- Last edited: 2026-10-11 17:40 PDT -->
 
 **TLDR:** The dashboard is a small web page that shows what each Marshall agent does now.
 It runs on the laptop as its own program (`marshall dashboard`), so it stays up when the daemon stops.
@@ -28,6 +28,32 @@ Its logs are `~/.marshall/logs/dashboard.{out,err}.log`; its events also go to `
 
 The port is `dashboardPort` in `marshall.config.json` (default `7474`).
 The server listens on `127.0.0.1` only, so no other machine can reach it directly.
+
+## Open it for the Oracle VM
+
+Marshall now runs only on the VM, so the dashboard does too.
+It is a systemd user unit, `marshall-dashboard`, next to `marshall`.
+The unit file is `scripts/systemd/marshall-dashboard.service`.
+
+To install it on the VM:
+
+```bash
+cp scripts/systemd/marshall-dashboard.service ~/.config/systemd/user/
+systemctl --user daemon-reload && systemctl --user enable --now marshall-dashboard
+```
+
+The server listens on the VM's `127.0.0.1:7474` only.
+From the Mac, open an SSH tunnel and then the page:
+
+```bash
+scripts/vm-dashboard.sh         # in a terminal, until Ctrl-C
+open http://127.0.0.1:7474
+```
+
+Check the unit: `systemctl --user is-active marshall-dashboard`.
+Logs: `journalctl --user -u marshall-dashboard -f`.
+The Mac no longer runs a dashboard or a daemon (`scripts/uninstall-launchd.sh all` removed both).
+The sections below about launchd and the Mac still describe the Mac install, for anyone who wants it back.
 
 ## Open it on the phone (Tailscale)
 

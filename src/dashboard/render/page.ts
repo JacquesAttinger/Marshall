@@ -8,7 +8,7 @@ import { html, raw, type SafeHtml } from "../html.ts";
 import { renderAgents } from "./agents.ts";
 import { renderNeedsYou } from "./needs-you.ts";
 import { renderQueue } from "./queue.ts";
-import { daemonPill, renderStrip } from "./strip.ts";
+import { daemonPill, type ProjectInfo, renderProject, renderStrip } from "./strip.ts";
 
 export const SECTION_NAMES = ["strip", "needsYou", "agents", "queue"] as const;
 export type SectionName = (typeof SECTION_NAMES)[number];
@@ -20,12 +20,15 @@ const NO_DB_TEXT = {
     "The database is older than this code. Start the daemon once (marshall start) to update it.",
 };
 
-function noDbSections(view: Extract<DashboardView, { kind: "no_db" }>): Sections {
+function noDbSections(
+  view: Extract<DashboardView, { kind: "no_db" }>,
+  project: ProjectInfo,
+): Sections {
   const waiting = (title: string) =>
     html`<h2>${title}</h2><p class="empty">Waiting for the database.</p>`.value;
   return {
     strip:
-      html`<div class="pills">${daemonPill(view.daemonRunning)}<span class="pill pill-warn">Database not ready</span></div>`
+      html`${renderProject(project)}<div class="pills">${daemonPill(view.daemonRunning)}<span class="pill pill-warn">Database not ready</span></div>`
         .value,
     needsYou:
       html`<h2>Needs you</h2><p class="note note-warn note-section">${NO_DB_TEXT[view.problem]}</p>`
@@ -35,15 +38,15 @@ function noDbSections(view: Extract<DashboardView, { kind: "no_db" }>): Sections
   };
 }
 
-export function renderSections(view: DashboardView, workspace: string): Sections {
-  if (view.kind === "no_db") return noDbSections(view);
+export function renderSections(view: DashboardView, project: ProjectInfo): Sections {
+  if (view.kind === "no_db") return noDbSections(view, project);
   const { data } = view;
   const now = new Date(data.now);
   return {
-    strip: renderStrip(data.strip, now).value,
+    strip: renderStrip(data.strip, now, project).value,
     needsYou: renderNeedsYou(data.needsYou, now, data.queue.error).value,
     agents: renderAgents(data.agents).value,
-    queue: renderQueue(data.queue, workspace, now).value,
+    queue: renderQueue(data.queue, project.workspace, now).value,
   };
 }
 
@@ -59,7 +62,7 @@ function section(name: SectionName, sections: Sections, hashes: Sections, cls: s
   return html`<section id="s-${name}" class="${cls}" data-hash="${hashes[name]}">${raw(sections[name])}</section>`;
 }
 
-export function renderPage(sections: Sections, now: string): string {
+export function renderPage(sections: Sections, now: string, helpHtml: SafeHtml): string {
   const hashes = sectionHashes(sections);
   return `<!doctype html>${html`<html lang="en">
 <head>
@@ -73,7 +76,7 @@ export function renderPage(sections: Sections, now: string): string {
 </head>
 <body>
 <header class="top">
-<div class="brand">Marshall</div>
+<div class="brand">Marshall${helpHtml}</div>
 ${section("strip", sections, hashes, "strip")}
 <p id="updated" class="updated" data-at="${now}" role="status">Updated just now</p>
 </header>

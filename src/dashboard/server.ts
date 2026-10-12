@@ -9,14 +9,17 @@ import type { Server } from "bun";
 import { type KillResult, killMessage, killSucceeded } from "../kill.ts";
 import type { Logger } from "../log.ts";
 import { type DashboardContext, IDENTIFIER } from "./context.ts";
+import { type HelpInfo, renderHelp } from "./render/help.ts";
 import { renderPage, renderSections, sectionHashes } from "./render/page.ts";
+import type { ProjectInfo } from "./render/strip.ts";
 
 export interface DashboardServerOptions {
   /** 0 picks a free port (tests). */
   port: number;
   hostname?: string;
   context: DashboardContext;
-  workspace: string;
+  project: ProjectInfo;
+  help: HelpInfo;
   log: Logger;
 }
 
@@ -126,12 +129,13 @@ function asset(name: string, type: string): Handler {
 }
 
 export function startDashboard(opts: DashboardServerOptions): Server<undefined> {
-  const { context, workspace, log } = opts;
+  const { context, project, log } = opts;
+  const helpHtml = renderHelp(opts.help);
   const guard = (handler: Handler) => guarded(log, handler);
   const sectionsNow = async () => {
     const view = await context.view();
     const now = view.kind === "ok" ? view.data.now : view.now;
-    return { sections: renderSections(view, workspace), now };
+    return { sections: renderSections(view, project), now };
   };
   return Bun.serve({
     port: opts.port,
@@ -141,7 +145,7 @@ export function startDashboard(opts: DashboardServerOptions): Server<undefined> 
       "/": {
         GET: guard(async () => {
           const { sections, now } = await sectionsNow();
-          return new Response(renderPage(sections, now), {
+          return new Response(renderPage(sections, now, helpHtml), {
             headers: { "Content-Type": "text/html; charset=utf-8" },
           });
         }),

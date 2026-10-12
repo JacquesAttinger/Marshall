@@ -1,4 +1,4 @@
-// Last edited: 2026-10-11 17:10 PDT
+// Last edited: 2026-10-11 18:30 PDT
 // Marshall's settings for the tic-tac-toe test project. Run with MARSHALL_CONFIG=<this file>.
 // Marshall's settings. Comments are allowed here (JSONC); secrets go in .env, not in this file.
 // The daemon and the dashboard each read this once at start: after a change, restart them
@@ -75,5 +75,8 @@
 
   // --- The dashboard (`marshall dashboard`, docs/dashboard.md) ---
   // Port on 127.0.0.1 only. The phone reaches it through `tailscale serve --bg <port>`.
-  "dashboardPort": 7474
+  "dashboardPort": 7474,
+  // How to reach the VM from the laptop. The dashboard's "?" help panel puts it in front of each
+  // check command. Remove it if Marshall runs on the machine you type on.
+  "sshCommand": "ssh -i ~/.ssh/marshall_oracle ubuntu@152.70.16.155"
 }

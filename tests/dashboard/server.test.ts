@@ -48,7 +48,13 @@ function start(ctx?: DashboardContext): void {
       listSessions: async () => [],
       daemon: { platform: "linux" },
     });
-  server = startDashboard({ port: 0, context, workspace: "w", log: recordingLogger().log });
+  server = startDashboard({
+    port: 0,
+    context,
+    project: { workspace: "w", repo: "r", baseBranch: "main" },
+    help: { repoDir: "~/r", configPath: "c.json", platform: "linux" },
+    log: recordingLogger().log,
+  });
   host = `127.0.0.1:${server.port}`;
   base = `http://${host}`;
 }

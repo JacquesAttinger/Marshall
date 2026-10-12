@@ -1,12 +1,14 @@
-// Last edited: 2026-10-11 21:00 PDT
-// `createProject`: the "add a project" pipeline. Seven steps, run in order, each reported as
+// Last edited: 2026-10-11 19:45 PDT
+// `createProject`: the "add a project" pipeline. Eight steps, run in order, each reported as
 // `{ step, ok, detail }`; the first failure stops the run. Every step is safe to run again (a step
 // that is already done says "Already done"), so a failed run is fixed by pressing Create again.
 // The API key is written to `secrets.env` and sent to Linear, and goes nowhere else: every
 // outgoing string passes through `redact`, and no step puts the key in a detail on purpose.
 
+import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { ConfigError } from "../config.ts";
+import { openMigratedDb } from "../db/index.ts";
 import { ensureWorkspaceSetup } from "../linear/setup.ts";
 import {
   addProject,
@@ -164,6 +166,21 @@ async function stepConfig(run: Run): Promise<string> {
   return `${configState} and registered the project. ${where}`;
 }
 
+/** Create the project's home and its database, so the daemon and the dashboard find a ready schema. */
+async function stepDatabase(run: Run): Promise<string> {
+  const home = getProject(run.input.slug)?.home;
+  if (!home)
+    throw new StepFailure("The project is not registered, so its database was not set up.");
+  mkdirSync(home, { recursive: true });
+  const path = join(home, "marshall.db");
+  const existed = run.deps.fs.existsSync(path);
+  const db = openMigratedDb(path);
+  db.close();
+  return existed
+    ? "Already done: the database exists and is up to date."
+    : "Created the project's database.";
+}
+
 const STEPS: Array<[string, (run: Run) => Promise<string>]> = [
   ["Check the Linear key", stepKey],
   ["Check the project name", stepName],
@@ -172,6 +189,7 @@ const STEPS: Array<[string, (run: Run) => Promise<string>]> = [
   ["Set up Linear", stepLinear],
   ["Trust the repo", stepTrust],
   ["Write the config", stepConfig],
+  ["Set up the database", stepDatabase],
 ];
 
 /** What the person sees for a step that threw: our own messages as they are, others generic. */

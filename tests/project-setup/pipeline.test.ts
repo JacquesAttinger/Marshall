@@ -31,6 +31,7 @@ describe("happy paths", () => {
       ["Set up Linear", true],
       ["Trust the repo", true],
       ["Write the config", true],
+      ["Set up the database", true],
     ]);
     expect(result.ok).toBe(true);
     expect(result.workspace).toBe("tictactoe1514");

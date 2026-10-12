@@ -259,6 +259,7 @@ The first failure stops the run.
 7. Write `~/.marshall-projects/<id>/config.json` and register the project.
    The config starts from the active project's config, so limits you tuned carry over (and `sshCommand` and `dashboardPort`).
    Only `workspace`, `teamId`, `repoPath` and `baseBranch` change.
+8. Set up the database: creates the project's home folder and its database with every table. Without this step a new project's daemon crashed with `no such table: runs`.
 
 The new project is not made active, unless it is the first one.
 When it is not, the panel offers a **Switch** button: tap it twice, like the Switch button in the project menu (see "Switch project" above; it uses the same route and has the same refusals).

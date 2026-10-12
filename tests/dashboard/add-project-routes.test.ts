@@ -156,7 +156,7 @@ describe("POST /projects", () => {
     expect(res.status).toBe(200);
     const body = (await res.json()) as { ok: boolean; steps: unknown[]; canSwitch: boolean };
     expect(body.ok).toBe(true);
-    expect(body.steps).toHaveLength(7);
+    expect(body.steps).toHaveLength(8);
     expect(body.canSwitch).toBe(false);
     expect(JSON.stringify([body, logLines])).not.toContain(CANARY);
     const logged = logLines.find((l) => l.event === "dashboard.add_project");

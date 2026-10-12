@@ -1,4 +1,4 @@
-// Last edited: 2026-10-11 20:30 PDT
+// Last edited: 2026-10-11 22:30 PDT
 // The dashboard's HTTP server: `Bun.serve` on 127.0.0.1, reached from the phone through
 // `tailscale serve`. Every route runs behind one guard (Host allow-list, security headers, a
 // plain 500 on a throw); `routes` match before `fetch`, so a guard only in `fetch` would never
@@ -8,6 +8,8 @@ import { join } from "node:path";
 import type { Server } from "bun";
 import { type KillResult, killMessage, killSucceeded } from "../kill.ts";
 import type { Logger } from "../log.ts";
+import type { SetupDeps } from "../project-setup/types.ts";
+import { addProjectRoutes } from "./add-project-routes.ts";
 import { type DashboardContext, IDENTIFIER } from "./context.ts";
 import { html } from "./html.ts";
 import {
@@ -30,6 +32,8 @@ export interface DashboardServerOptions {
   /** Unset: no project menu actions (tests that do not exercise switching). */
   projects?: ProjectSwitchOptions;
   log: Logger;
+  /** Fakes for the "add project" pipeline (tests). Unset: the real ones. */
+  setupDeps?: SetupDeps;
 }
 
 const ASSETS = join(import.meta.dir, "assets");
@@ -186,6 +190,13 @@ export function startDashboard(opts: DashboardServerOptions): Server<undefined> 
           ),
         ),
       },
+      ...addProjectRoutes({
+        guard,
+        originMatches,
+        log,
+        deps: opts.setupDeps,
+        canSwitch: switcher !== null && opts.projects?.current !== null,
+      }),
       "/assets/dashboard.js": {
         GET: guard(asset("dashboard.js", "text/javascript; charset=utf-8")),
       },

@@ -1,4 +1,4 @@
-// Last edited: 2026-10-03 18:34 CDT
+// Last edited: 2026-10-11 21:50 PDT
 // The dashboard's pure templates: escaping, the hand-off sanitizer, every empty state, each card
 // and panel variant, every queue status code, and the page shell's CSP-friendly markup.
 
@@ -167,7 +167,7 @@ describe("renderHelp", () => {
       "n",
       renderHelp(HELP),
     );
-    expect(page).toContain('<div class="brand">Marshall<details class="help">');
+    expect(page).toMatch(/<div class="brand">Marshall[\s\S]*?<details class="help">/);
   });
 });
 

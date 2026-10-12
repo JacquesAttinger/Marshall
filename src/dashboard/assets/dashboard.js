@@ -1,4 +1,4 @@
-// Last edited: 2026-10-11 20:30 PDT
+// Last edited: 2026-10-11 22:30 PDT
 // The dashboard's only script. Every 5 s it fetches /sections and swaps the sections whose hash
 // changed, keeping what the person was doing: open hand-offs stay open (and are not fetched
 // again), the scroll position holds, and an armed Kill button stays armed across the swap.
@@ -147,11 +147,12 @@ function applySwitchState() {
   }
 }
 
+/** Every message slot gets the text: the project menu's, and the Add project panel's. */
 function switchMessage(text, ok) {
-  const el = $("[data-switch-msg]");
-  if (!el) return;
-  el.textContent = text;
-  el.classList.toggle("bad", !ok);
+  for (const el of document.querySelectorAll("[data-switch-msg]")) {
+    el.textContent = text;
+    el.classList.toggle("bad", !ok);
+  }
 }
 
 /** The dashboard exits right after it replies. Wait for the new one to answer, then reload. */

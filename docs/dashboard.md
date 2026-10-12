@@ -1,6 +1,6 @@
 # Marshall dashboard
 
-<!-- Last edited: 2026-10-11 17:40 PDT -->
+<!-- Last edited: 2026-10-11 18:40 PDT -->
 
 **TLDR:** The dashboard is a small web page that shows what each Marshall agent does now.
 It runs on the laptop as its own program (`marshall dashboard`), so it stays up when the daemon stops.
@@ -80,6 +80,14 @@ Other names get 403, so a web page that points its own domain at your laptop can
 
 The page refreshes every 5 seconds while the tab is visible.
 "Updated N s ago" under the strip turns amber with "Connection lost" when a refresh fails.
+
+### Header: project and help
+
+- Under the page title, **Project `<repo>`** says which repo Marshall edits, which Linear workspace it watches, and which branch PRs go into.
+  It comes from the config the dashboard started with, so after a config change restart the dashboard and reload the tab.
+- The **?** button at the top right opens a list of terminal commands that check on Marshall: is it running, full status, recent log lines, restart.
+  Set `sshCommand` in the config (for example `ssh -i ~/.ssh/key ubuntu@host`) and each command is shown ready to paste on your laptop.
+  Without it, the commands are plain and run on the machine that serves the dashboard.
 
 ### Status strip
 

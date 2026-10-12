@@ -1,10 +1,11 @@
-// Last edited: 2026-10-03 18:34 CDT
+// Last edited: 2026-10-11 21:30 PDT
 // The page shell and the four swappable sections. `GET /` renders the whole page; `GET /sections`
 // returns the same four sections as HTML strings plus a hash each, so the client swaps only the
 // ones that changed. No inline script or style anywhere: the CSP allows only /assets.
 
 import type { DashboardView } from "../context.ts";
 import { html, raw, type SafeHtml } from "../html.ts";
+import { renderAddProject } from "./add-project.ts";
 import { renderAgents } from "./agents.ts";
 import { renderNeedsYou } from "./needs-you.ts";
 import { renderQueue } from "./queue.ts";
@@ -73,10 +74,12 @@ export function renderPage(sections: Sections, now: string, helpHtml: SafeHtml):
 <link rel="icon" href="data:,">
 <link rel="stylesheet" href="/assets/dashboard.css">
 <script src="/assets/dashboard.js" defer></script>
+<link rel="stylesheet" href="/assets/add-project.css">
+<script src="/assets/add-project.js" defer></script>
 </head>
 <body>
 <header class="top">
-<div class="brand">Marshall${helpHtml}</div>
+<div class="brand">Marshall${renderAddProject()}${helpHtml}</div>
 ${section("strip", sections, hashes, "strip")}
 <p id="updated" class="updated" data-at="${now}" role="status">Updated just now</p>
 </header>

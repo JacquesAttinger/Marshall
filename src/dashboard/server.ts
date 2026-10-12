@@ -1,8 +1,9 @@
 // Last edited: 2026-10-11 20:30 PDT
 // The dashboard's HTTP server: `Bun.serve` on 127.0.0.1, reached from the phone through
-// `tailscale serve`. Every route runs behind one guard (Host allow-list, security headers, a
-// plain 500 on a throw); `routes` match before `fetch`, so a guard only in `fetch` would never
-// run for them. Kill also checks Origin, and runs at most once per identifier at a time.
+// `tailscale serve`. Every route runs behind one guard (Host allow-list, optional Tailscale user
+// list, security headers, a plain 500 on a throw); `routes` match before `fetch`, so a guard only
+// in `fetch` would never run for them. Kill also checks Origin, and runs at most once per
+// identifier at a time.
 
 import { join } from "node:path";
 import type { Server } from "bun";
@@ -30,6 +31,8 @@ export interface DashboardServerOptions {
   /** Unset: no project menu actions (tests that do not exercise switching). */
   projects?: ProjectSwitchOptions;
   log: Logger;
+  /** `config.tailscaleUsers`: who may open the page via `tailscale serve`. Unset: no check. */
+  tailscaleUsers?: readonly string[];
 }
 
 const ASSETS = join(import.meta.dir, "assets");
@@ -55,6 +58,24 @@ export function hostAllowed(host: string | null): boolean {
   return name === "localhost" || name === "127.0.0.1" || name.endsWith(".ts.net");
 }
 
+/**
+ * The tailnet-identity check, on top of `hostAllowed`. `tailscale serve` adds `Tailscale-User-Login`
+ * to every request it forwards from the tailnet and strips any copy the client sent. With a user
+ * list set: a request with the header must name a listed user (case-insensitive); a `*.ts.net` Host
+ * without it did not come through `tailscale serve`, so it is refused; `localhost` and `127.0.0.1`
+ * (the SSH tunnel) carry no header and pass. Without a list nothing is checked.
+ */
+export function tailnetUserAllowed(
+  host: string | null,
+  login: string | null,
+  users: readonly string[] | undefined,
+): boolean {
+  if (!users) return true;
+  const who = login?.trim().toLowerCase();
+  if (who) return users.some((user) => user.trim().toLowerCase() === who);
+  return !hostName(host)?.endsWith(".ts.net");
+}
+
 /** Same host, any scheme: the browser says https (tailscale serve) while this server sees http. */
 export function originMatches(origin: string | null, host: string | null): boolean {
   if (!origin || !host) return false;
@@ -76,9 +97,13 @@ function text(body: string, status: number): Response {
 
 type Handler = (req: Request & { params?: Record<string, string> }) => Response | Promise<Response>;
 
-function guarded(log: Logger, handler: Handler): Handler {
+function guarded(log: Logger, handler: Handler, tailscaleUsers?: readonly string[]): Handler {
   return async (req) => {
-    if (!hostAllowed(req.headers.get("host"))) return withHeaders(text("Forbidden", 403));
+    const host = req.headers.get("host");
+    const login = req.headers.get("tailscale-user-login");
+    if (!hostAllowed(host) || !tailnetUserAllowed(host, login, tailscaleUsers)) {
+      return withHeaders(text("Forbidden", 403));
+    }
     try {
       return withHeaders(await handler(req));
     } catch (err) {
@@ -140,7 +165,7 @@ function asset(name: string, type: string): Handler {
 export function startDashboard(opts: DashboardServerOptions): Server<undefined> {
   const { context, project, log } = opts;
   const helpHtml = renderHelp(opts.help);
-  const guard = (handler: Handler) => guarded(log, handler);
+  const guard = (handler: Handler) => guarded(log, handler, opts.tailscaleUsers);
   const switcher = opts.projects
     ? createProjectSwitcher({ ...opts.projects, liveAgents: () => context.liveAgents(), log })
     : null;

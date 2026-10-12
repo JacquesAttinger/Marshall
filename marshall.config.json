@@ -1,4 +1,4 @@
-// Last edited: 2026-10-03 18:27 CDT
+// Last edited: 2026-10-11 19:10 PDT
 // Marshall's settings. Comments are allowed here (JSONC); secrets go in .env, not in this file.
 // The daemon and the dashboard each read this once at start: after a change, restart them
 // (`marshall stop && marshall start`; the dashboard's restart is in docs/runbook.md).
@@ -75,4 +75,7 @@
   // --- The dashboard (`marshall dashboard`, docs/dashboard.md) ---
   // Port on 127.0.0.1 only. The phone reaches it through `tailscale serve --bg <port>`.
   "dashboardPort": 7474
+  // To restrict the page to your own Tailscale login(s), add after "dashboardPort" (needs a comma):
+  //   "tailscaleUsers": ["you@example.com"]
+  // Unset: any device on your tailnet can open it. See docs/dashboard.md.
 }

@@ -1,0 +1,14 @@
+# Last edited: 2026-10-12 16:50 PDT
+# One auto-update pass (scripts/auto-update.sh). marshall-update.timer starts it. Rendered by
+# scripts/install-auto-update.sh; the output goes to the journal: journalctl --user -u marshall-update
+[Unit]
+Description=Marshall auto-update (pull main, check it, restart)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory={{REPO}}
+ExecStart=/bin/bash {{REPO}}/scripts/auto-update.sh
+Environment=PATH={{PATH}}
+TimeoutStartSec=15min

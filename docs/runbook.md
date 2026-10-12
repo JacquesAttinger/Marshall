@@ -46,6 +46,29 @@ Use `systemctl --user start|stop|restart|status marshall` instead.
 One known gap: a restart during the planning phase starts a second planner for the same issue.
 `docs/oracle_hosting_plan.md` has the full Oracle VM setup and test results.
 
+### Auto-update (Linux)
+
+A deployed checkout does not update itself when a PR merges.
+`bash scripts/install-auto-update.sh` (from the main checkout) installs a systemd timer that runs `scripts/auto-update.sh` two minutes after boot and five minutes after each run.
+Each run does this:
+
+1. Fetch `origin/main`. If there is nothing new, stop.
+2. Fast-forward the checkout, and run `bun install --frozen-lockfile` if `package.json` or `bun.lock` changed.
+3. Run the gate, `bun run typecheck && bun test` (the same checks as the pre-commit hook).
+4. If the change touched `src/`, `bin/`, `package.json`, or `bun.lock`, restart `marshall` and `marshall-dashboard`.
+   A docs-only or test-only change restarts nothing.
+
+If the gate fails, the script resets to the commit it started from and remembers the bad commit in `~/.marshall-update-failed`, so it does not retry that commit every five minutes.
+The next commit on `main` is tried again.
+The script leaves the checkout alone when it is off `main`, has edits to tracked files, or has diverged from origin; it logs why.
+
+```bash
+journalctl --user -u marshall-update           # what each run did
+systemctl --user list-timers marshall-update   # when it runs next
+systemctl --user start marshall-update         # run one pass now
+systemctl --user disable --now marshall-update.timer   # turn it off
+```
+
 ## Projects
 
 Marshall keeps a registry of projects in `~/.marshall-projects` (set `MARSHALL_PROJECTS_DIR` to move it).

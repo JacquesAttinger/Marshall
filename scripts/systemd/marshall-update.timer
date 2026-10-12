@@ -1,0 +1,11 @@
+# Last edited: 2026-10-12 16:50 PDT
+# Run marshall-update.service two minutes after boot, then five minutes after each run ends.
+[Unit]
+Description=Marshall auto-update, every 5 minutes
+
+[Timer]
+OnBootSec=2min
+OnUnitInactiveSec=5min
+
+[Install]
+WantedBy=timers.target

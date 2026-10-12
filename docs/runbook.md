@@ -1,6 +1,6 @@
 # Marshall runbook
 
-<!-- Last edited: 2026-10-11 20:30 PDT -->
+<!-- Last edited: 2026-10-11 19:38 PDT -->
 
 **TLDR:** Marshall runs as a launchd agent on the desk laptop.
 `scripts/install-launchd.sh` installs it, `marshall status` and the dashboard show what it is doing, `marshall stop` / `start` / `pause` / `resume` / `kill` control it, and ntfy pushes tell your phone when an issue needs you.
@@ -78,7 +78,7 @@ Before this change the units named the tic-tac-toe config.
 Run these on the VM:
 
 ```bash
-cd ~/code/Project_Marshall && git pull
+cd ~/code/Marshall && git pull
 set -a; . ~/.marshall-secrets.env; set +a     # puts MARSHALL_LINEAR_API_KEY in the environment
 bin/marshall project import --name tic-tac-toe --home ~/.marshall-tictactoe --key-from-env marshall.tictactoe.config.json
 bin/marshall project list                     # tic-tac-toe is active

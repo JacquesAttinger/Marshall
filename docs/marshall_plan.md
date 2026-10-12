@@ -1,10 +1,10 @@
-# Project Marshall — Planning Spec (v3)
+# Marshall — Planning Spec (v3)
 
-<!-- Last edited: 2026-10-03 18:33 CDT -->
+<!-- Last edited: 2026-10-11 19:38 PDT -->
 
 ## TLDR
 
-Project Marshall is a robot manager for my coding robots.
+Marshall is a robot manager for my coding robots.
 It watches my Linear to-do list, picks up open issues, and starts Claude agents that plan and build the fix.
 I do not sit at the keyboard.
 I watch a dashboard, get a push notification when a robot is done or stuck, and then decide if I need to test it by hand.

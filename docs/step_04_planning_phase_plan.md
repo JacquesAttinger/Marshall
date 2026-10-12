@@ -1,6 +1,6 @@
 # Step 04 — Planning Phase — Implementation Plan
 
-<!-- Last edited: 2026-09-20 10:56 CDT -->
+<!-- Last edited: 2026-10-11 19:38 PDT -->
 
 **TLDR:** Build the part of Marshall that turns a Linear issue into a plan file with no human in the loop.
 A cheap Haiku call says "simple" or "complex" and that picks Opus or Fable.
@@ -9,7 +9,7 @@ After the run, the orchestrator proves the agent changed nothing else, then post
 The agent never touches Linear.
 One decision from grilling reaches outside this step: there is no overlap check at pickup any more; conflicts are resolved after a merge instead.
 
-Step file: `docs/steps/04_planning_phase.md`. Spec: `docs/project_marshall_plan.md` sections 5.3, 5.4, 6.1, 6.2, 7.1, 11, 12, 14.
+Step file: `docs/steps/04_planning_phase.md`. Spec: `docs/marshall_plan.md` sections 5.3, 5.4, 6.1, 6.2, 7.1, 11, 12, 14.
 
 ## Context
 
@@ -99,7 +99,7 @@ README.md                           plugin note, `marshall plan`, links
 docs/steps/04_planning_phase.md     decisions recorded, open questions closed
 docs/steps/07_queue_and_scheduler.md  overlap check removed from scope and deliverables
 docs/steps/08_master_agent_state_machine.md  bounce runs Planning in revise mode; add merge detection + Rebasing phase
-docs/project_marshall_plan.md       sections 5.3 step 4, 5.4, 8.2, 11, 13, 14, 15 #12, "Still open"
+docs/marshall_plan.md       sections 5.3 step 4, 5.4, 8.2, 11, 13, 14, 15 #12, "Still open"
 docs/runner.md                      --strict-mcp-config on the command line
 ```
 

@@ -1,6 +1,6 @@
 # Step 05 — Implement and Review Phase — Implementation Plan
 
-<!-- Last edited: 2026-09-20 -->
+<!-- Last edited: 2026-10-11 19:38 PDT -->
 
 **TLDR:** Build the robot that turns a plan file into a green pull request.
 It is a skill (a recipe file) that a Claude agent follows inside a ChessBuddy worktree: build the change, run the tests, open the PR, wait for CI, then ask a second Claude to review the diff and fix what it finds, up to 4 times.
@@ -9,7 +9,7 @@ It reports progress in one JSON file under `~/.marshall/issues/<ISSUE-ID>/` that
 When it cannot get green, it still opens a draft PR so you can read the work from your phone.
 Two agents can run Docker Compose at the same time because each slot gets its own project name and ports.
 
-Step file: `docs/steps/05_implement_and_review_phase.md`. Spec: `docs/project_marshall_plan.md` sections 6.3, 6.4, 11, 12.
+Step file: `docs/steps/05_implement_and_review_phase.md`. Spec: `docs/marshall_plan.md` sections 6.3, 6.4, 11, 12.
 
 ## Context
 

@@ -1,6 +1,6 @@
 # Step 04 — Planning Phase
 
-<!-- Last edited: 2026-09-20 13:10 CDT -->
+<!-- Last edited: 2026-10-11 19:38 PDT -->
 
 **TLDR:** Two things: a cheap Haiku call that says "simple" or "complex," and a `/marshall:plan` skill that is `linear-plan` without the interview.
 The orchestrator writes a brief file from the Linear issue, the skill reads it, explores the repo, writes and commits a plan file, and the orchestrator checks the result with git and posts a summary to Linear.
@@ -19,7 +19,7 @@ Given an issue and a worktree, produce a committed `docs/<topic>_plan.md` with n
 
 ## Spec references
 
-Sections 5.3, 5.4, 6.1, 6.2, 7.1, 11, 12, 14 of `project_marshall_plan.md`.
+Sections 5.3, 5.4, 6.1, 6.2, 7.1, 11, 12, 14 of `marshall_plan.md`.
 
 ## Decisions (grilling of 2026-09-20)
 

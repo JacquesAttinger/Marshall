@@ -1,6 +1,6 @@
 # Marshall Dashboard — Plan
 
-<!-- Last edited: 2026-10-03 CDT -->
+<!-- Last edited: 2026-10-11 19:38 PDT CDT -->
 
 ## TLDR
 
@@ -12,7 +12,7 @@ We add no new library: Bun makes the HTML, and one small script refreshes the pa
 
 ## Context
 
-Plan section 8 (`docs/project_marshall_plan.md`) specifies a web dashboard: agent panels, queue, a "needs you" list with hand-off cards, and a Kill button.
+Plan section 8 (`docs/marshall_plan.md`) specifies a web dashboard: agent panels, queue, a "needs you" list with hand-off cards, and a Kill button.
 Iteration 1 used `marshall status` and `claude agents` as stand-ins.
 Steps 01–09 are built and the dry-run tuning is merged (PRs #13–#23).
 The dashboard is the first item of iteration 2 (plan section 13).
@@ -159,7 +159,7 @@ Changed:
 - `src/notify.ts`, `src/phases/rebase.ts` — use `linearIssueUrl()`.
 - `scripts/install-launchd.sh`, `scripts/uninstall-launchd.sh` — take a target `daemon | dashboard | all` (default `all` for install, required for uninstall), and refuse to run from a path under `.worktrees/` (`REPO` comes from the script's location, so a worktree run would point the real daemon at the feature branch).
 - `scripts/check-size.ts` — also scan `.js`. `.lintstagedrc` — add `js,css`.
-- `docs/state_machine.md:85`, `docs/runbook.md` (dashboard section, `launchctl kickstart -k gui/$(id -u)/com.jacques.marshall-dashboard` after an update), `README.md` (split the iteration 2 checkbox at `:212` and tick the dashboard), `docs/project_marshall_plan.md` (section 8.4 + a new "Dashboard decisions — 2026-10-03" table under section 15).
+- `docs/state_machine.md:85`, `docs/runbook.md` (dashboard section, `launchctl kickstart -k gui/$(id -u)/com.jacques.marshall-dashboard` after an update), `README.md` (split the iteration 2 checkbox at `:212` and tick the dashboard), `docs/marshall_plan.md` (section 8.4 + a new "Dashboard decisions — 2026-10-03" table under section 15).
 
 Every new or edited file keeps the "Last edited" header; files stay under 500 lines and functions under 75 (`bun run check:size`).
 

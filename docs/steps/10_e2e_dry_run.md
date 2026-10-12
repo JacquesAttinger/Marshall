@@ -1,6 +1,6 @@
 # Step 10 — End-to-End Dry Run
 
-<!-- Last edited: 2026-09-20 12:23 CDT -->
+<!-- Last edited: 2026-10-11 19:38 PDT -->
 
 **TLDR:** Turn it on for real, on ChessBuddy, for a day or two.
 Feed it real issues, break it on purpose, watch the pushes, read the hand-offs, then tune the caps and write down what "proven" means before Hemut.
@@ -16,7 +16,7 @@ Evidence that the full loop works unattended, and a written bar for the Hemut ro
 
 ## Spec references
 
-Sections 13 (Hemut rollout gate), 14, 15 "Still open" of `project_marshall_plan.md`.
+Sections 13 (Hemut rollout gate), 14, 15 "Still open" of `marshall_plan.md`.
 
 ## In scope
 

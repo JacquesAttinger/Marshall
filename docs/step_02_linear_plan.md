@@ -1,6 +1,6 @@
 # Step 02 — Linear Setup and Client: Implementation Plan
 
-<!-- Last edited: 2026-09-19 22:05 CDT -->
+<!-- Last edited: 2026-10-11 19:38 PDT -->
 
 ## TLDR
 
@@ -83,7 +83,7 @@ tests/
 docs/
 ├── linear_setup.md              # what is configured, ids, manual steps
 ├── step_02_linear_plan.md       # this plan
-├── project_marshall_plan.md     # §5.3, §12 amended
+├── marshall_plan.md     # §5.3, §12 amended
 └── steps/02_..., 07_...         # decisions recorded; "clear the delegate" → release()
 marshall.config.json             # teamId filled
 .env.example                     # MARSHALL_LINEAR_API_KEY
@@ -214,7 +214,7 @@ export async function ensureWorkspaceSetup(gql, teamId, log): Promise<SetupResul
 
 - `docs/linear_setup.md`: manual steps (create the API key in the ChessBuddy workspace under Settings → Security & access → Personal API keys; put it in `.env`; connect the GitHub integration to `dvairus/ChessBuddy`; keep default automations; confirm "PR merged → Done"), the `marshall linear setup` output with ids, the label and comment-footer conventions, and how to run the e2e test.
 - `docs/steps/02_linear_setup_and_client.md`: replace "Open questions" with the decisions tables above; add `release()` to scope.
-- `docs/project_marshall_plan.md`: §5.3 steps 1, 5, 6 (no delegate; state + label; pre-read); §12 "Claim lock" row → "Linear state + `marshall` label group + local SQLite"; §15 "Still open" gains "delegate once the OAuth agent exists (iteration 2)".
+- `docs/marshall_plan.md`: §5.3 steps 1, 5, 6 (no delegate; state + label; pre-read); §12 "Claim lock" row → "Linear state + `marshall` label group + local SQLite"; §15 "Still open" gains "delegate once the OAuth agent exists (iteration 2)".
 - `docs/steps/07_queue_and_scheduler.md`: reconcile line "clear the delegate and move the issue back to Todo" → "call `linear.release()`"; pickup filter text.
 - `README.md`: add the command and the env var.
 - `.env.example`: `MARSHALL_LINEAR_API_KEY=` with a one-line comment about the Hemut collision.

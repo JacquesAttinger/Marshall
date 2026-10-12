@@ -1,6 +1,6 @@
 # Step 01 — Scaffold
 
-<!-- Last edited: 2026-09-19 21:28 CDT -->
+<!-- Last edited: 2026-10-11 19:38 PDT -->
 
 **TLDR:** Set up the empty house before anyone moves in.
 One runtime, one config file, one database, one logger, one CLI entry point, and a pre-commit hook that keeps the code clean.
@@ -16,7 +16,7 @@ A runnable repo where every later step has a place to put code, a config to read
 
 ## Spec references
 
-Sections 4, 10.1, 11 of `project_marshall_plan.md`.
+Sections 4, 10.1, 11 of `marshall_plan.md`.
 
 ## In scope
 

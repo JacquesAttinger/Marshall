@@ -1,4 +1,4 @@
-// Last edited: 2026-10-11 18:10 PDT
+// Last edited: 2026-10-11 19:38 PDT
 // The "?" help panel: terminal commands that check on Marshall. A <details> element, so it needs no
 // script (the CSP forbids inline script) and the 5 s section swap never closes it.
 
@@ -73,7 +73,7 @@ export function helpCommands(info: HelpInfo): HelpCommand[] {
     },
     {
       title: "Open this dashboard from your laptop",
-      note: "Run it in the Project_Marshall checkout, then open http://127.0.0.1:7474.",
+      note: "Run it in the Marshall checkout, then open http://127.0.0.1:7474.",
       command: "scripts/vm-dashboard.sh",
     },
   ];

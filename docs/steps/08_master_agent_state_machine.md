@@ -1,6 +1,6 @@
 # Step 08 — Master Agent State Machine
 
-<!-- Last edited: 2026-09-20 22:30 CDT -->
+<!-- Last edited: 2026-10-11 19:38 PDT -->
 
 **TLDR:** The brain for one issue.
 It runs plan → implement → review → hand-off, watches the clock, restarts a stuck agent, and knows when to give up and call me.
@@ -17,7 +17,7 @@ One `MasterAgent` class per claim that drives the phases in order, enforces ever
 
 ## Spec references
 
-Sections 5.1, 5.2, 6.6, 7, 10.2 of `project_marshall_plan.md`.
+Sections 5.1, 5.2, 6.6, 7, 10.2 of `marshall_plan.md`.
 
 ## In scope
 

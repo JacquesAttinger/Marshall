@@ -1,4 +1,4 @@
-<!-- Last edited: 2026-10-03 -->
+<!-- Last edited: 2026-10-11 19:45 PDT -->
 
 <a id="readme-top"></a>
 
@@ -36,6 +36,7 @@
     <li>
       <a href="#about-the-project">About The Project</a>
       <ul>
+        <li><a href="#how-it-works">How it works</a></li>
         <li><a href="#built-with">Built With</a></li>
       </ul>
     </li>
@@ -50,6 +51,9 @@
       <a href="#usage">Usage</a>
       <ul>
         <li><a href="#commands">Commands</a></li>
+        <li><a href="#dashboard">Dashboard</a></li>
+        <li><a href="#projects">Projects</a></li>
+        <li><a href="#hosting">Hosting</a></li>
         <li><a href="#agent-runner">Agent runner</a></li>
         <li><a href="#plugin-and-skills">Plugin and skills</a></li>
         <li><a href="#scheduler">Scheduler</a></li>
@@ -66,7 +70,7 @@
 <!-- ABOUT THE PROJECT -->
 ## About The Project
 
-[![Marshall status output][product-screenshot]](images/screenshot.png)
+[![Marshall dashboard: one issue waiting in Needs you, three idle agent slots][product-screenshot]](images/dashboard.png)
 
 Before Marshall, every Linear issue started the same way.
 I opened a terminal, started a Claude Code session by hand, and pasted in the issue.
@@ -77,10 +81,41 @@ For each one, it runs a Claude Code agent through the full loop: plan, implement
 I create the issue. Marshall does the rest, even while I sleep.
 I review the pull request when it lands.
 
-Iteration 1 runs one repo on a laptop, driven by [Linear](https://linear.app) and [Claude Code](https://claude.com/claude-code).
+Marshall runs on a laptop or on an always-on Linux server, for one project or several.
+You watch it three ways: the CLI, a web dashboard, and your phone.
+The dashboard shows what every agent is doing, lists what needs you, and has a Kill button.
+It works over [Tailscale](https://tailscale.com), so you can check on Marshall from anywhere.
+
 The goal is bigger than that.
 A background agent that never stops picking up new work turns my job from writing code into writing issues — one step toward a fully autonomous software engineer that works around the clock.
 See the [roadmap](#roadmap) for where that's headed.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+### How it works
+
+```mermaid
+flowchart LR
+    A[Linear issue<br/>in Todo] --> B[Plan]
+    B --> C[Implement]
+    C --> D[Review<br/>and fix]
+    D --> E[Hand-off<br/>and pull request]
+    E --> F{{Needs Verification<br/>you review}}
+    F -->|merged| G[Done]
+    F -->|bounced back to Todo| B
+```
+
+1. **Pick up.** The scheduler polls Linear. It starts the oldest, highest-priority Todo issue that fits the caps (agents at once, starts per day).
+2. **Plan, implement, review.** Each issue gets its own git worktree. A Claude Code agent writes a plan, then the code, then runs a review loop and fixes what it finds.
+3. **Hand off.** Marshall opens a pull request and writes a hand-off: what changed, how to try it, and what the agent decided on its own. The issue moves to Needs Verification.
+4. **You decide.** Merge the pull request and the issue goes to Done. Move the issue back to Todo and Marshall plans a new round on the same branch.
+
+This is the pull request Marshall opened for the Snake Game project, with the hand-off written into its description:
+
+[![A pull request opened by Marshall, with the hand-off in the description][pr-screenshot]](images/pull-request.png)
+
+Marshall also rebases waiting pull requests when a sibling merges, resumes a stalled agent, and stops one that runs too long.
+See [`docs/state_machine.md`](docs/state_machine.md) for every state.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -113,6 +148,7 @@ cp .env.example .env      # put the target workspace's key in MARSHALL_LINEAR_AP
 bun run migrate           # creates ~/.marshall/marshall.db
 bin/marshall linear setup # creates the Needs Verification state and the marshall labels (once)
 bin/marshall status       # prints config, state dir, schema version, row counts
+bin/marshall dashboard    # then open http://127.0.0.1:7474
 ```
 
 The Linear key is `MARSHALL_LINEAR_API_KEY`, not `LINEAR_API_KEY`.
@@ -121,20 +157,28 @@ See [`docs/linear_setup.md`](docs/linear_setup.md) for the manual steps and the 
 
 State lives in `~/.marshall/` (override with `MARSHALL_HOME`).
 Config is `marshall.config.json` at the repo root (override with `--config <path>` or `MARSHALL_CONFIG`).
+With more than one project, the [project registry](#projects) picks the config and state folder instead.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 <!-- USAGE EXAMPLES -->
 ## Usage
 
-Point `marshall.config.json` at a repo and a Linear team, then start the daemon (`bin/marshall run`, or `scripts/install-launchd.sh` for an always-on laptop service).
+Point `marshall.config.json` at a repo and a Linear team, then start the daemon (`bin/marshall run`, or an always-on service: see [Hosting](#hosting)).
 From there, the workflow is: create a Linear issue, let Marshall pick it up, and review the pull request it opens.
+Watch it from the [dashboard](#dashboard) or with `bin/marshall status` and `bin/marshall logs`.
 
 ### Commands
 
 | Command | What it does |
 |---|---|
-| `bin/marshall status [--json]` | Show config and DB state. Never writes. |
+| `bin/marshall status [--json]` | Show config and DB state, then the daemon, the live agents, the queue, and the "needs you" list. Never writes. |
+| `bin/marshall start` / `stop` | Load or unload the launchd agent (macOS). On Linux, use `systemctl --user`: see [Hosting](#hosting). |
+| `bin/marshall pause` / `resume` | Stop new starts, or allow them again. Running agents always finish. |
+| `bin/marshall kill <identifier>` | Stop one issue's agent and mark the issue Blocked. |
+| `bin/marshall logs [identifier]` | Tail the orchestrator log, or follow one issue's agent. |
+| `bin/marshall dashboard` | Serve the [web dashboard](#dashboard) on `127.0.0.1:<dashboardPort>` (default 7474) until Ctrl-C. |
+| `bin/marshall project list` / `use <slug>` / `import …` | Manage the [project registry](#projects). |
 | `bin/marshall db migrate` | Create the state dir and apply pending migrations. |
 | `bin/marshall linear setup [--json]` | Create the Linear states and labels Marshall needs. Idempotent. Refuses a key from another workspace. |
 | `bin/marshall plan <identifier> --cwd <worktree> [--revise] [--json]` | Plan one issue in an existing worktree: classify, launch the planner, verify, post to Linear. |
@@ -150,6 +194,66 @@ From there, the workflow is: create a Linear issue, let Marshall pick it up, and
 The pre-commit hook runs lint-staged (Biome + size check), typecheck, and tests.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+### Dashboard
+
+`bin/marshall dashboard` serves a small web page that shows what Marshall is doing.
+It runs as its own program, so it stays up when the daemon stops.
+It refreshes every 5 seconds.
+It is read-only except for one button: **Kill**.
+
+![Dashboard: SNA-6 in Needs you with its hand-off expanded][needs-you-screenshot]
+
+| Section | Shows |
+|---|---|
+| Header and status strip | The active project, whether the daemon runs, agent slots in use, and the daily and rolling-window start caps. |
+| Needs you | Issues waiting on a person (Needs Verification or Blocked), each with a plain summary, the PR and Linear links, and the hand-off. |
+| Agents | One card per slot: issue, phase, model, elapsed time, tokens, the agent's last action, and a two-tap Kill button. |
+| Queue | The issues the next scheduler tick would pick up, and why the others wait. |
+
+The `?` button opens a panel of copy-paste commands for checking on Marshall from a terminal.
+The page is also usable at phone width:
+
+<p align="center">
+  <img src="images/dashboard-phone.png" alt="The dashboard on a phone" width="320">
+</p>
+
+See [`docs/dashboard.md`](docs/dashboard.md) for what each section means, the Kill flow, and phone access over Tailscale.
+
+### Projects
+
+Marshall can watch more than one project.
+Each project has its own Linear workspace, repo, config, and state folder.
+One project is active at a time, and the CLI, the daemon, and the dashboard all follow it.
+
+![The project menu, listing two projects with a Switch button][switcher-screenshot]
+
+```bash
+bin/marshall project list                  # * marks the active project
+bin/marshall project use <slug>            # change the active project, then restart the services
+bin/marshall project import --name <name> <config-path>
+```
+
+You can do the same from the dashboard.
+**Switch** changes the active project, and the dashboard refuses while any agent is still working.
+**Add project** creates a new one from your phone: paste a Linear API key, pick a team, and choose a new private GitHub repo or an existing one.
+
+![The Add a project dialog][add-project-screenshot]
+
+See "Projects" in [`docs/runbook.md`](docs/runbook.md) for the registry and [`docs/dashboard.md`](docs/dashboard.md) for the dashboard flows.
+
+### Hosting
+
+| Where | How |
+|---|---|
+| Mac laptop | `scripts/install-launchd.sh` installs Marshall as a launchd agent. `scripts/install-launchd.sh dashboard` adds the dashboard as its own job. |
+| Linux server or VM | `scripts/install-systemd.sh` installs Marshall as a systemd user service. Copy `scripts/systemd/marshall-dashboard.service` for the dashboard. Marshall has run on an Oracle Always Free VM this way: see [`docs/oracle_hosting_plan.md`](docs/oracle_hosting_plan.md). |
+| Your phone | Install [Tailscale](https://tailscale.com) on the server and the phone. `scripts/tailscale-serve.sh` shares the dashboard on your private tailnet only, never on the public internet. Set `tailscaleUsers` in the config to limit it to your own login. |
+| From a laptop to a server | `scripts/vm-dashboard.sh` opens an SSH tunnel to the server's dashboard. |
+
+The dashboard listens on `127.0.0.1` only, and it rejects any `Host` name other than `localhost`, `127.0.0.1`, and `*.ts.net`.
+Run the install scripts from the main checkout, never from a worktree.
+See [`docs/runbook.md`](docs/runbook.md) for start, stop, pause, and recovery.
 
 ### Agent runner
 
@@ -201,7 +305,10 @@ See [`docs/state_machine.md`](docs/state_machine.md) for the full diagram.
 - [`docs/planning.md`](docs/planning.md) — planning phase: the brief, the skill, the classifier, the post-run checks.
 - [`docs/isolation.md`](docs/isolation.md) — slot → Compose project → ports, and how the env reaches an agent.
 - [`docs/handoff_template.md`](docs/handoff_template.md) — what each of the six hand-off sections is for.
-- [`docs/dashboard.md`](docs/dashboard.md) — the web dashboard: what each section means, Kill, and phone access over Tailscale.
+- [`docs/dashboard.md`](docs/dashboard.md) — the web dashboard: what each section means, Kill, switching and adding projects, and phone access over Tailscale.
+- [`docs/runbook.md`](docs/runbook.md) — install, projects, start/stop/pause/kill, notifications, and recovery.
+- [`docs/oracle_hosting_plan.md`](docs/oracle_hosting_plan.md) — running Marshall on an always-on Oracle VM.
+- [`docs/state_machine.md`](docs/state_machine.md) — every claim state and the pulse.
 - [`plugin/README.md`](plugin/README.md) — the skills agents run, and how to try them by hand.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
@@ -211,6 +318,9 @@ See [`docs/state_machine.md`](docs/state_machine.md) for the full diagram.
 
 - [x] Iteration 1 — Linear autopilot on one repo: poller, planner, implementer, reviewer, hand-off package, ntfy.sh push
 - [x] Iteration 2 — Web dashboard (queue, hand-off cards, kill switch): `marshall dashboard`, see [`docs/dashboard.md`](docs/dashboard.md)
+- [x] Iteration 2 — Phone access over Tailscale, with an optional per-login allow list
+- [x] Iteration 2 — Always-on hosting on a Linux VM (systemd), plus an SSH tunnel to its dashboard
+- [x] Iteration 2 — Multiple projects: a project registry, a project switcher, and Add project from the dashboard
 - [ ] Iteration 2 — Raise the agent cap, Linear OAuth status
 - [ ] Iteration 3 — Voice intake: an iOS Shortcut turns a spoken note into a well-formed Linear issue
 - [ ] Iteration 4 — Marshall proper: open-ended goals split into issues on their own, two-way chat instead of a CLI, an always-on machine
@@ -253,7 +363,11 @@ Project Link: [https://github.com/JacquesAttinger/Project_Marshall](https://gith
 [stars-url]: https://github.com/JacquesAttinger/Project_Marshall/stargazers
 [issues-shield]: https://img.shields.io/github/issues/JacquesAttinger/Project_Marshall.svg?style=for-the-badge
 [issues-url]: https://github.com/JacquesAttinger/Project_Marshall/issues
-[product-screenshot]: images/screenshot.png
+[product-screenshot]: images/dashboard.png
+[needs-you-screenshot]: images/needs-you.png
+[switcher-screenshot]: images/project-switcher.png
+[add-project-screenshot]: images/add-project.png
+[pr-screenshot]: images/pull-request.png
 [Bun.sh]: https://img.shields.io/badge/Bun-000000?style=for-the-badge&logo=bun&logoColor=white
 [Bun-url]: https://bun.sh
 [TypeScript.org]: https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white

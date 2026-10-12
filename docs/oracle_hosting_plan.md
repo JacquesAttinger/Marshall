@@ -1,4 +1,4 @@
-<!-- Last edited: 2026-10-11 19:10 PDT -->
+<!-- Last edited: 2026-10-11 19:38 PDT -->
 
 # Plan: Host Marshall on an Oracle Always Free VM
 
@@ -38,7 +38,7 @@ Research findings that shape this plan:
   The docs verified this only on Claude Code 2.1.278 on macOS (`docs/runner.md:5`).
 - The code never reads an Anthropic key.
   Auth comes from the environment.
-  `docs/project_marshall_plan.md:262` says "Everything uses the Max login. No API key."
+  `docs/marshall_plan.md:262` says "Everything uses the Max login. No API key."
 
 ## Decisions (defaults, change if you disagree)
 
@@ -71,7 +71,7 @@ Run them on the VM as soon as it exists.
    Result (2026-10-05): passes on Claude Code 2.1.289, Linux arm64.
    The launch text is now `backgrounded · <8hex> · <name>`, and the job-id parser in `src/runner/launch.ts` still finds the id.
 2. `bun --version` is 1.4.2 on linux-aarch64.
-   `bun test` in Project_Marshall passes (CI already runs it on Ubuntu x86).
+   `bun test` in Marshall passes (CI already runs it on Ubuntu x86).
 3. The target repo's toolchain installs and its tests run on arm64.
    Result (2026-10-05): TickTick fails this check, because it needs Xcode.
    ChessBuddy passes: `uv run pytest` gives 691 passed, and `docker compose up --build --wait` is healthy on arm64.
@@ -146,7 +146,7 @@ On the VM, as a normal user (not root):
    The token cannot call the fork's "sync with upstream" API.
    To update the fork, push upstream `main` to the fork from the Mac (fast-forward only).
 3. **Linear.**
-   Put `MARSHALL_LINEAR_API_KEY` in `~/code/Project_Marshall/.env`.
+   Put `MARSHALL_LINEAR_API_KEY` in `~/code/Marshall/.env`.
    The key must belong to the workspace in the config: `chessbuddy` for the VM.
    The Mac `.env` key belongs to `todo-timer`, so make a separate key for the VM.
    Load it without chat, and check its workspace before you send it.
@@ -159,10 +159,10 @@ On the VM, as a normal user (not root):
 ## Step 5: Install Marshall
 
 1. `mkdir -p ~/code && cd ~/code`.
-2. Clone Project_Marshall and your ChessBuddy fork.
+2. Clone Marshall and your ChessBuddy fork.
    The fork must be at `~/code/ChessBuddy`, because `repoPath` in `marshall.vm.config.json` points there.
    Keep the fork's `main` level with upstream before you start.
-3. In Project_Marshall: `HUSKY=0 bun install --frozen-lockfile`.
+3. In Marshall: `HUSKY=0 bun install --frozen-lockfile`.
 4. Set `MARSHALL_CONFIG=marshall.vm.config.json`.
    Run `bin/marshall db migrate`, then `bin/marshall linear setup` (idempotent), then `bin/marshall status`.
    Check that `status` shows the right workspace (`chessbuddy`) and no errors.
@@ -189,7 +189,7 @@ Run it from the main checkout, with the VM config:
 
 ```bash
 sudo loginctl enable-linger $USER
-MARSHALL_CONFIG=$HOME/code/Project_Marshall/marshall.vm.config.json scripts/install-systemd.sh
+MARSHALL_CONFIG=$HOME/code/Marshall/marshall.vm.config.json scripts/install-systemd.sh
 ```
 
 Use `--dry-run` to print the unit and change nothing.
@@ -203,12 +203,12 @@ After=network-online.target
 Wants=network-online.target
 
 [Service]
-WorkingDirectory=%h/code/Project_Marshall
-ExecStart=%h/.bun/bin/bun %h/code/Project_Marshall/bin/marshall run
+WorkingDirectory=%h/code/Marshall
+ExecStart=%h/.bun/bin/bun %h/code/Marshall/bin/marshall run
 EnvironmentFile=%h/.marshall-secrets.env
 Environment=MARSHALL_QUIET=1
 Environment=MARSHALL_CLAUDE_BIN=%h/.local/bin/claude
-Environment=MARSHALL_CONFIG=%h/code/Project_Marshall/marshall.vm.config.json
+Environment=MARSHALL_CONFIG=%h/code/Marshall/marshall.vm.config.json
 Environment=PATH=%h/.bun/bin:%h/.local/bin:/usr/local/bin:/usr/bin:/bin:/usr/games
 Restart=always
 RestartSec=30
@@ -316,7 +316,7 @@ A first-class Linux path, so `marshall start|stop|status` work on Linux:
 - Add a systemd runner next to `src/launchd.ts`.
   The file already takes injectable `platform` and `launchctl` dependencies, so the shape fits.
 - `scripts/install-systemd.sh` now exists (see Step 7).
-- Update `docs/runbook.md`, `README.md:130`, and the hosting question (Q20) in `docs/project_marshall_plan.md`.
+- Update `docs/runbook.md`, `README.md:130`, and the hosting question (Q20) in `docs/marshall_plan.md`.
 - Ship it through a worktree, a PR, and a Linear issue (per your workflow rules).
 - Keep `check:size` limits (500 lines per file, 75 per function).
 

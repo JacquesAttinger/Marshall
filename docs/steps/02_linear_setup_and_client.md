@@ -1,6 +1,6 @@
 # Step 02 — Linear Setup and Client
 
-<!-- Last edited: 2026-09-19 23:30 CDT -->
+<!-- Last edited: 2026-10-11 19:38 PDT -->
 
 **TLDR:** Make the ChessBuddy Linear workspace ready for robots, then write the one module that talks to Linear.
 Find issues, claim them, move them, comment on them, file follow-ups.
@@ -17,7 +17,7 @@ Every Linear read or write in Marshall goes through one typed client, and the Ch
 
 ## Spec references
 
-Sections 5.1, 5.3, 6.5, 12 of `project_marshall_plan.md`.
+Sections 5.1, 5.3, 6.5, 12 of `marshall_plan.md`.
 Workspace: `https://linear.app/chessbuddy`, team ChessBuddy, team id `91f682c4-ff2b-4fa3-a3d6-46c22ea3882d`.
 
 ## In scope

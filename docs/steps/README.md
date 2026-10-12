@@ -1,6 +1,6 @@
 # Iteration 1 — Build Steps
 
-<!-- Last edited: 2026-09-21 01:50 CDT -->
+<!-- Last edited: 2026-10-11 19:38 PDT -->
 
 **TLDR:** Iteration 1 is split into 11 steps.
 Each step is one Markdown file that one agent can carry out.
@@ -8,7 +8,7 @@ Grill each file, then implement it.
 Steps in the same wave do not touch the same code, so they can run in parallel.
 Step 11, the Innovate agent, comes last and only after the dry run.
 
-Source spec: [`../project_marshall_plan.md`](../project_marshall_plan.md).
+Source spec: [`../marshall_plan.md`](../marshall_plan.md).
 
 ## Dependency graph
 

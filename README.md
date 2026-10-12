@@ -1,4 +1,4 @@
-<!-- Last edited: 2026-10-11 19:45 PDT -->
+<!-- Last edited: 2026-10-11 19:38 PDT -->
 
 <a id="readme-top"></a>
 
@@ -11,7 +11,7 @@
 <!-- PROJECT LOGO -->
 <br />
 <div align="center">
-  <a href="https://github.com/JacquesAttinger/Project_Marshall">
+  <a href="https://github.com/JacquesAttinger/Marshall">
     <img src="images/logo.png" alt="Logo" width="80" height="80">
   </a>
 
@@ -20,12 +20,12 @@
   <p align="center">
     A Linear autopilot that runs Claude Code agents on your issues — plan, implement, and hand off a pull request, while you sleep.
     <br />
-    <a href="docs/project_marshall_plan.md"><strong>Explore the docs »</strong></a>
+    <a href="docs/marshall_plan.md"><strong>Explore the docs »</strong></a>
     <br />
     <br />
-    <a href="https://github.com/JacquesAttinger/Project_Marshall/issues/new?labels=bug">Report Bug</a>
+    <a href="https://github.com/JacquesAttinger/Marshall/issues/new?labels=bug">Report Bug</a>
     &middot;
-    <a href="https://github.com/JacquesAttinger/Project_Marshall/issues/new?labels=enhancement">Request Feature</a>
+    <a href="https://github.com/JacquesAttinger/Marshall/issues/new?labels=enhancement">Request Feature</a>
   </p>
 </div>
 
@@ -299,7 +299,7 @@ See [`docs/state_machine.md`](docs/state_machine.md) for the full diagram.
 
 ### Further documentation
 
-- [`docs/project_marshall_plan.md`](docs/project_marshall_plan.md) — the spec.
+- [`docs/marshall_plan.md`](docs/marshall_plan.md) — the spec.
 - [`docs/steps/`](docs/steps/) — iteration 1 build steps.
 - [`docs/linear_setup.md`](docs/linear_setup.md) — what is configured in Linear and why.
 - [`docs/planning.md`](docs/planning.md) — planning phase: the brief, the skill, the classifier, the post-run checks.
@@ -326,7 +326,7 @@ See [`docs/state_machine.md`](docs/state_machine.md) for the full diagram.
 - [ ] Iteration 4 — Marshall proper: open-ended goals split into issues on their own, two-way chat instead of a CLI, an always-on machine
 - [ ] Later — a Testing agent that scans the repo, finds bugs on its own, and proposes fixes the same way the Innovate agent proposes features
 
-See [`docs/project_marshall_plan.md`](docs/project_marshall_plan.md) for the full plan and the [open issues](https://github.com/JacquesAttinger/Project_Marshall/issues) for what's in flight now.
+See [`docs/marshall_plan.md`](docs/marshall_plan.md) for the full plan and the [open issues](https://github.com/JacquesAttinger/Marshall/issues) for what's in flight now.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -350,19 +350,19 @@ The pre-commit hook (lint, typecheck, tests) runs on every commit — see [Comma
 
 Jacques Attinger - [@JacquesAttinger](https://github.com/JacquesAttinger) - jacques.attinger@gmail.com
 
-Project Link: [https://github.com/JacquesAttinger/Project_Marshall](https://github.com/JacquesAttinger/Project_Marshall)
+Project Link: [https://github.com/JacquesAttinger/Marshall](https://github.com/JacquesAttinger/Marshall)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 <!-- MARKDOWN LINKS & IMAGES -->
-[contributors-shield]: https://img.shields.io/github/contributors/JacquesAttinger/Project_Marshall.svg?style=for-the-badge
-[contributors-url]: https://github.com/JacquesAttinger/Project_Marshall/graphs/contributors
-[forks-shield]: https://img.shields.io/github/forks/JacquesAttinger/Project_Marshall.svg?style=for-the-badge
-[forks-url]: https://github.com/JacquesAttinger/Project_Marshall/network/members
-[stars-shield]: https://img.shields.io/github/stars/JacquesAttinger/Project_Marshall.svg?style=for-the-badge
-[stars-url]: https://github.com/JacquesAttinger/Project_Marshall/stargazers
-[issues-shield]: https://img.shields.io/github/issues/JacquesAttinger/Project_Marshall.svg?style=for-the-badge
-[issues-url]: https://github.com/JacquesAttinger/Project_Marshall/issues
+[contributors-shield]: https://img.shields.io/github/contributors/JacquesAttinger/Marshall.svg?style=for-the-badge
+[contributors-url]: https://github.com/JacquesAttinger/Marshall/graphs/contributors
+[forks-shield]: https://img.shields.io/github/forks/JacquesAttinger/Marshall.svg?style=for-the-badge
+[forks-url]: https://github.com/JacquesAttinger/Marshall/network/members
+[stars-shield]: https://img.shields.io/github/stars/JacquesAttinger/Marshall.svg?style=for-the-badge
+[stars-url]: https://github.com/JacquesAttinger/Marshall/stargazers
+[issues-shield]: https://img.shields.io/github/issues/JacquesAttinger/Marshall.svg?style=for-the-badge
+[issues-url]: https://github.com/JacquesAttinger/Marshall/issues
 [product-screenshot]: images/dashboard.png
 [needs-you-screenshot]: images/needs-you.png
 [switcher-screenshot]: images/project-switcher.png

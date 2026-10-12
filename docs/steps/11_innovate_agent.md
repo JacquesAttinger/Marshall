@@ -1,6 +1,6 @@
 # Step 11 — Innovate Agent
 
-<!-- Last edited: 2026-09-20 10:55 CDT -->
+<!-- Last edited: 2026-10-11 19:38 PDT -->
 
 **TLDR:** Give Marshall a way to suggest work, not only do it.
 A scheduled agent reads the ChessBuddy repo, writes three feature proposals, and pushes them to my phone.
@@ -20,7 +20,7 @@ This is the last step of iteration 1 and runs only after step 10 proves the loop
 
 ## Spec references
 
-Section 16 of `project_marshall_plan.md`, plus the rows it added to sections 4, 7, 9, 11, 12, 13, and 14.
+Section 16 of `marshall_plan.md`, plus the rows it added to sections 4, 7, 9, 11, 12, 13, and 14.
 
 ## In scope
 

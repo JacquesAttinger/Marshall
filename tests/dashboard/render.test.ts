@@ -1,4 +1,4 @@
-// Last edited: 2026-10-11 21:50 PDT
+// Last edited: 2026-10-11 19:38 PDT
 // The dashboard's pure templates: escaping, the hand-off sanitizer, every empty state, each card
 // and panel variant, every queue status code, and the page shell's CSP-friendly markup.
 
@@ -26,7 +26,7 @@ const PROJECT: ProjectInfo = {
 };
 const HELP: HelpInfo = {
   sshCommand: "ssh -i ~/.ssh/key ubuntu@203.0.113.7",
-  repoDir: "~/code/Project_Marshall",
+  repoDir: "~/code/Marshall",
   configPath: "marshall.tictactoe.config.json",
   platform: "linux",
 };
@@ -136,7 +136,7 @@ describe("renderHelp", () => {
       "ssh -i ~/.ssh/key ubuntu@203.0.113.7 'systemctl --user is-active marshall'",
     );
     expect(cmds[1]).toContain("MARSHALL_CONFIG=marshall.tictactoe.config.json bin/marshall status");
-    expect(cmds[1]).toContain("cd ~/code/Project_Marshall");
+    expect(cmds[1]).toContain("cd ~/code/Marshall");
   });
 
   test("without an ssh command the checks run on this machine", () => {

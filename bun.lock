@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "project-marshall",
+      "name": "marshall",
       "dependencies": {
         "zod": "^4.6.5",
       },

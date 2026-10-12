@@ -1,6 +1,6 @@
 # Step 09 — Ops: launchd, Notifications, CLI
 
-<!-- Last edited: 2026-09-21 01:50 CDT -->
+<!-- Last edited: 2026-10-11 19:38 PDT -->
 
 **TLDR:** Make Marshall start on its own, stay awake, tell my phone when something needs me, and give me a terminal view until the web dashboard exists.
 
@@ -15,7 +15,7 @@ Marshall survives a reboot, runs unattended on the desk laptop, pushes to ntfy o
 
 ## Spec references
 
-Sections 7, 8.1 (Kill), 9, 10.1 of `project_marshall_plan.md`.
+Sections 7, 8.1 (Kill), 9, 10.1 of `marshall_plan.md`.
 
 ## In scope
 

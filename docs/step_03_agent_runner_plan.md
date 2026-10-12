@@ -1,6 +1,6 @@
 # Step 03 — Agent Runner — Implementation Plan
 
-<!-- Last edited: 2026-09-19 23:35 CDT -->
+<!-- Last edited: 2026-10-11 19:38 PDT -->
 
 **TLDR:** Build the module that starts a Claude agent in the background, learns when it stops, and can kill or resume it.
 Hooks inside the agent append JSON lines to a file under `~/.marshall/events/`.
@@ -8,7 +8,7 @@ The runner watches that folder, writes the events into SQLite, and stops the ses
 It reads three sources for status: the daemon's `claude agents --json` for "is it alive", the transcript file's mtime for "is it still working", and `state.json` for ids and timestamps.
 Fast tests with fake files run in CI. One live test against the real `claude --bg` runs by hand before the PR.
 
-Step file: `docs/steps/03_agent_runner.md`. Spec: `docs/project_marshall_plan.md` sections 4, 6.6, 10.1, 12.
+Step file: `docs/steps/03_agent_runner.md`. Spec: `docs/marshall_plan.md` sections 4, 6.6, 10.1, 12.
 
 ## Context
 
@@ -50,7 +50,7 @@ Recommendations taken without a question:
   - `Notification`: `notification_type` includes `quota_auto_resume_fired|stale|disabled`.
   - `SessionStart` gives `session_id` before `state.json` has it.
   - Hook entries merge across settings levels. `--setting-sources user,project,local` chooses which files load; `--settings` still applies.
-- Transcript path: `~/.claude/projects/<slug>/<sessionId>.jsonl` where `slug` = cwd with every non-alphanumeric character replaced by `-` (`~/code/Project_Marshall` → `-Users-jacquesattinger-code-Project-Marshall`). Prefer `state.json.linkScanPath` when present.
+- Transcript path: `~/.claude/projects/<slug>/<sessionId>.jsonl` where `slug` = cwd with every non-alphanumeric character replaced by `-` (`~/code/Marshall` → `-Users-jacquesattinger-code-Marshall`). Prefer `state.json.linkScanPath` when present.
 - Personal `~/.claude/settings.json` holds: `env` (incl. `ANTHROPIC_DEFAULT_FABLE_MODEL`), `model: opus`, `effortLevel: high`, `modelSettings`, `outputStyle: Concise`, `skipDangerousModePermissionPrompt: true`, `enabledPlugins`, 3 Stop hooks, 1 PostToolUse hook, 6 SessionStart hooks.
 - `origin/main` is at `f6366ec` (PR #2, step 01, merged). Step 02 is not started. Step 03 is parallel with 02 and shares no files with it.
 

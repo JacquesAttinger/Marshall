@@ -1,6 +1,6 @@
 # Step 05 — Implement and Review Phase
 
-<!-- Last edited: 2026-09-20 10:30 CDT -->
+<!-- Last edited: 2026-10-11 19:38 PDT -->
 
 **TLDR:** A `/marshall:implement` skill that runs `ship-plan` inside an existing worktree, keeps each agent's Docker services separate, then runs `/marshall:review` and fixes what it finds, up to 4 times.
 
@@ -19,7 +19,7 @@ Given a plan file in a worktree, end with a green PR that a second Claude pass h
 
 ## Spec references
 
-Sections 6.3, 6.4, 11, 12 of `project_marshall_plan.md`.
+Sections 6.3, 6.4, 11, 12 of `marshall_plan.md`.
 
 ## In scope
 

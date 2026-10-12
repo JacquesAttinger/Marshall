@@ -1,6 +1,6 @@
 # Step 08 — Master Agent State Machine: implementation plan
 
-<!-- Last edited: 2026-09-20 22:30 CDT -->
+<!-- Last edited: 2026-10-11 19:38 PDT -->
 
 **TLDR:** We build the brain that drives one issue from start to finish.
 It runs the four phases in order: plan, implement, review, hand-off.
@@ -11,7 +11,7 @@ All the parts exist from steps 03–07; this step connects them.
 
 Steps 06 (hand-off package, PR #10) and 07 (queue + scheduler, PR #9) are merged to `main`.
 Step 08 is the integration step: one `MasterAgent` per claim, plugged into the scheduler through `MasterAgentHooks` and `startLoop` (`src/scheduler/index.ts`).
-The spec is `docs/steps/08_master_agent_state_machine.md` plus sections 5.1, 5.2, 6.6, 7, 10.2 of `docs/project_marshall_plan.md`.
+The spec is `docs/steps/08_master_agent_state_machine.md` plus sections 5.1, 5.2, 6.6, 7, 10.2 of `docs/marshall_plan.md`.
 
 ## Decisions (grilling, 2026-09-20)
 

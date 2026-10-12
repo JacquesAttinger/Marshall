@@ -1,6 +1,6 @@
 # Step 01 — Scaffold: Implementation Plan
 
-<!-- Last edited: 2026-09-19 21:40 CDT -->
+<!-- Last edited: 2026-10-11 19:38 PDT -->
 
 ## TLDR
 
@@ -15,7 +15,7 @@ When this lands, every later step has a place to put code and a test command tha
 Every later step imports from it.
 The step file had five open questions.
 They were answered in a grilling session on 2026-09-19, and the decisions are below.
-The spec is `docs/project_marshall_plan.md`, sections 4, 10.1, and 11.
+The spec is `docs/marshall_plan.md`, sections 4, 10.1, and 11.
 
 ## Decisions (from grilling)
 
@@ -51,7 +51,7 @@ Routine choices made without asking: worktree at `.worktrees/step-01-scaffold` o
 ## Layout
 
 ```
-Project_Marshall/
+Marshall/
 ├── bin/marshall                  # #!/usr/bin/env bun → src/cli/index.ts
 ├── src/
 │   ├── config.ts                 # Zod schema, loadConfig(), loadEnv(), resolve paths

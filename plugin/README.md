@@ -1,6 +1,6 @@
 # Marshall plugin
 
-<!-- Last edited: 2026-09-22 12:44 CDT -->
+<!-- Last edited: 2026-10-11 19:38 PDT -->
 
 **TLDR:** The skills Marshall's agents run inside a worktree of the target repo (`repoPath` in `marshall.config.json`).
 The runner passes `--plugin-dir <this repo>/plugin`, so the skills load in an agent even though `~/.claude/skills` never does (`--setting-sources project,local` drops the `user` source).
@@ -20,7 +20,7 @@ The runner passes `--plugin-dir <this repo>/plugin`, so the skills load in an ag
 ```bash
 claude plugin validate plugin
 cd ~/code/TickTick            # any worktree of the target repo, on a feature branch
-claude --plugin-dir ~/code/Project_Marshall/plugin "/marshall:review docs/x_plan.md"
+claude --plugin-dir ~/code/Marshall/plugin "/marshall:review docs/x_plan.md"
 ```
 
 `implement` needs the env the runner sets (`MARSHALL_ISSUE_DIR`, `MARSHALL_ISSUE_URL`, `MARSHALL_SLOT`, `MARSHALL_MAX_CYCLES`, `MARSHALL_BASE_BRANCH`, `COMPOSE_PROJECT_NAME`, the `*_HOST_PORT` vars).

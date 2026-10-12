@@ -1,6 +1,6 @@
 # Step 06 — Hand-off Package
 
-<!-- Last edited: 2026-09-20 17:35 CDT -->
+<!-- Last edited: 2026-10-11 19:38 PDT -->
 
 **TLDR:** The note the robot leaves on my desk.
 It tells me where the feature is, what was wrong, what the robot did, and how to check it.
@@ -18,7 +18,7 @@ A fixed six-section document produced at the end of every issue, so I can decide
 
 ## Spec references
 
-Sections 7.1, 8.3 of `project_marshall_plan.md`.
+Sections 7.1, 8.3 of `marshall_plan.md`.
 Format source: `~/.claude/skills/linear-plan/SKILL.md`, step 3 (the orientation walkthrough).
 
 ## In scope

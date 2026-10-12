@@ -1,4 +1,4 @@
-// Last edited: 2026-10-03 18:27 CDT
+// Last edited: 2026-10-11 19:38 PDT
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { existsSync, mkdirSync, realpathSync, symlinkSync } from "node:fs";
@@ -61,8 +61,8 @@ describe("claudeHome", () => {
 describe("transcriptPath", () => {
   test("slugs the cwd by replacing every non-alphanumeric character with -", () => {
     process.env.CLAUDE_CONFIG_DIR = "/cfg";
-    expect(transcriptPath("/Users/me/code/Project_Marshall", "abc")).toBe(
-      "/cfg/projects/-Users-me-code-Project-Marshall/abc.jsonl",
+    expect(transcriptPath("/Users/me/code/Marshall", "abc")).toBe(
+      "/cfg/projects/-Users-me-code-Marshall/abc.jsonl",
     );
   });
 

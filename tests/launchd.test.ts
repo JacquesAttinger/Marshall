@@ -1,4 +1,4 @@
-// Last edited: 2026-09-21 13:55 CDT
+// Last edited: 2026-10-11 19:38 PDT
 // launchd wrappers with a fake launchctl: status parsing, the missing-plist paths, and the
 // bootstrap/bootout error handling. Also renders the plist template the way install-launchd.sh does
 // and checks the fields the runbook promises.
@@ -143,7 +143,7 @@ describe("plist template", () => {
     );
     const rendered = template
       .replaceAll("{{BUN}}", "/opt/homebrew/bin/bun")
-      .replaceAll("{{REPO}}", "/Users/j/code/Project_Marshall")
+      .replaceAll("{{REPO}}", "/Users/j/code/Marshall")
       .replaceAll("{{HOME}}", "/Users/j")
       .replaceAll("{{CLAUDE}}", "/Users/j/.local/bin/claude")
       .replaceAll("{{PATH}}", "/Users/j/.local/bin:/opt/homebrew/bin:/usr/bin:/bin");
@@ -156,11 +156,11 @@ describe("plist template", () => {
       "<key>PATH</key>\n    <string>/Users/j/.local/bin:/opt/homebrew/bin:/usr/bin:/bin</string>",
     );
     expect(rendered).toContain(
-      "<string>exec /usr/bin/caffeinate -i /opt/homebrew/bin/bun /Users/j/code/Project_Marshall/bin/marshall run</string>",
+      "<string>exec /usr/bin/caffeinate -i /opt/homebrew/bin/bun /Users/j/code/Marshall/bin/marshall run</string>",
     );
     expect(rendered).toContain("<key>KeepAlive</key>\n  <true/>");
     expect(rendered).toContain("<key>RunAtLoad</key>\n  <true/>");
-    expect(rendered).toContain("<string>/Users/j/code/Project_Marshall</string>");
+    expect(rendered).toContain("<string>/Users/j/code/Marshall</string>");
     expect(rendered).toContain("<string>/Users/j/.marshall/logs/launchd.out.log</string>");
     expect(rendered).toContain("<string>/Users/j/.marshall/logs/launchd.err.log</string>");
     expect(rendered).toContain(`<string>${LAUNCHD_LABEL}</string>`);

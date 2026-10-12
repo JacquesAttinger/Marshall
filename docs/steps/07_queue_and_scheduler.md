@@ -1,6 +1,6 @@
 # Step 07 — Queue and Scheduler
 
-<!-- Last edited: 2026-09-20 15:05 CDT -->
+<!-- Last edited: 2026-10-11 19:38 PDT -->
 
 **TLDR:** The part that looks at Linear every minute, decides which issue is next, checks that the caps allow a start, claims it, creates its worktree, and hands it to a master agent.
 It also cleans up after a crash.
@@ -18,7 +18,7 @@ There is no overlap check in iteration 1: two agents may touch the same code, an
 
 ## Spec references
 
-Sections 5.3, 5.4, 6.6 (reconcile), 10.2 (caps and cadence) of `project_marshall_plan.md`.
+Sections 5.3, 5.4, 6.6 (reconcile), 10.2 (caps and cadence) of `marshall_plan.md`.
 
 ## In scope
 

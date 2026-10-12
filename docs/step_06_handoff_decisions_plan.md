@@ -1,6 +1,6 @@
 # Plan — Record the step 06 grilling decisions
 
-<!-- Last edited: 2026-09-20 14:40 CDT -->
+<!-- Last edited: 2026-10-11 19:38 PDT -->
 
 **TLDR:** We asked five questions about the hand-off package and you answered all five.
 Now we write those answers into the step 06 document, so the builder does not have to guess.
@@ -38,7 +38,7 @@ One file: `docs/steps/06_handoff_package.md`.
 - In "Acceptance criteria": add that a second `post()` on the same PR leaves exactly one Hand-off section, and that `validate` accepts a file with the optional Round-N block.
 - Update the "Last edited" comment at the top of the file.
 
-No code changes. No changes to the spec (`project_marshall_plan.md` section 7.1 already matches decision 2) or to step 08 (already says "rewrite").
+No code changes. No changes to the spec (`marshall_plan.md` section 7.1 already matches decision 2) or to step 08 (already says "rewrite").
 
 ## Workflow
 

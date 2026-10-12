@@ -7,7 +7,7 @@
 import { loadConfig, loadEnv, requireLinearApiKey } from "../config.ts";
 import { migrate, openDb } from "../db/index.ts";
 import { connectLinear } from "../linear/index.ts";
-import { createLogger, rotateLog } from "../log.ts";
+import { createLogger, type Logger, rotateLog } from "../log.ts";
 import { createMasterAgentHooks, defaultMasterDeps } from "../master-agent.ts";
 import { createNotifier } from "../notify.ts";
 import { dbPath, ensureHome, launchdLogPaths, logPath } from "../paths.ts";
@@ -20,6 +20,7 @@ import {
   startLoop,
   tick,
 } from "../scheduler/index.ts";
+import { ensureRepoTrusted } from "../trust.ts";
 import { gitWorktrees } from "../worktree.ts";
 
 export interface RunOptions {
@@ -45,6 +46,17 @@ export function untilSignal(): Promise<string> {
   });
 }
 
+/** Never blocks the daemon: a failed trust write is logged, and the launch error says what to do. */
+function trustRepo(repoPath: string, log: Logger): void {
+  try {
+    const result = ensureRepoTrusted(repoPath);
+    if (result === "trusted") log.info("run.repo_trusted", { repoPath });
+    else if (result !== "already_trusted") log.warn("run.repo_trust_skipped", { repoPath, result });
+  } catch (err) {
+    log.warn("run.repo_trust_failed", { repoPath, error: (err as Error).message });
+  }
+}
+
 export async function runLoop(opts: RunOptions): Promise<void> {
   const config = loadConfig(opts.configPath);
   const env = loadEnv();
@@ -53,6 +65,7 @@ export async function runLoop(opts: RunOptions): Promise<void> {
   const rotated = opts.once ? [] : rotateLogs();
   const log = createLogger({ command: "run" });
   if (rotated.length > 0) log.info("run.logs_rotated", { rotated });
+  trustRepo(config.repoPath, log);
   const linear = await connectLinear({
     apiKey,
     teamId: config.teamId,

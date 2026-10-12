@@ -1,6 +1,7 @@
 // Last edited: 2026-10-03 18:27 CDT
 // Hand-rolled dispatch. No CLI dependency. `bin/marshall` imports this file.
 
+import { applyActiveProject } from "../projects.ts";
 import { runStart, runStop } from "./daemon.ts";
 import { runDashboard } from "./dashboard.ts";
 import { runMigrate } from "./db.ts";
@@ -174,6 +175,7 @@ export async function dispatch(argv: string[]): Promise<number> {
     console.error(USAGE);
     return 2;
   }
+  applyActiveProject(process.env, args.configPath);
   return (await found.command.run(args, found.rest)) ?? 0;
 }
 

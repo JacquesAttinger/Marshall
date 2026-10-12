@@ -1,4 +1,4 @@
-// Last edited: 2026-10-03 18:27 CDT
+// Last edited: 2026-10-11 19:10 PDT
 // Typed loaders for marshall.config.json (committed, JSONC: `//` and `/* */` comments allowed)
 // and process.env (from .env).
 
@@ -81,6 +81,13 @@ export const ConfigSchema = z
      * help panel puts it in front of each check command. Unset: the commands run on this machine.
      */
     sshCommand: z.string().min(1).optional(),
+    /**
+     * Tailscale logins (`you@example.com`) allowed to open the dashboard through `tailscale serve`.
+     * Set: a request that carries a `Tailscale-User-Login` header must match one of these, and a
+     * `*.ts.net` request without the header is refused. The SSH tunnel (`localhost`) is not
+     * affected. Unset: any device on your tailnet can open it. Case-insensitive.
+     */
+    tailscaleUsers: z.array(z.string().min(1)).min(1).optional(),
   })
   .strict();
 

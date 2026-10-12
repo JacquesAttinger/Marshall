@@ -1,6 +1,6 @@
-// Last edited: 2026-10-03 18:27 CDT
+// Last edited: 2026-10-11 19:10 PDT
 // The dashboard server on port 0 over a temp MARSHALL_HOME: security headers, the Host allow-list
-// on every route, the Origin check on Kill, each Kill outcome, the hand-off route, a plain 500,
+// on every route, the Tailscale user list, the Origin check on Kill, each Kill outcome, the hand-off route, a plain 500,
 // the missing-DB page, and one kill per identifier at a time. launchd is faked as Linux; Linear
 // and the session roster are injected.
 
@@ -10,7 +10,12 @@ import { dirname } from "node:path";
 import type { Server } from "bun";
 import { parseConfig } from "../../src/config.ts";
 import { createDashboardContext, type DashboardContext } from "../../src/dashboard/context.ts";
-import { hostAllowed, originMatches, startDashboard } from "../../src/dashboard/server.ts";
+import {
+  hostAllowed,
+  originMatches,
+  startDashboard,
+  tailnetUserAllowed,
+} from "../../src/dashboard/server.ts";
 import { migrate, openDb } from "../../src/db/index.ts";
 import { killFlag } from "../../src/master/types.ts";
 import { dbPath, handoffPath } from "../../src/paths.ts";
@@ -36,7 +41,7 @@ function makeDb(): void {
   db.close();
 }
 
-function start(ctx?: DashboardContext): void {
+function start(ctx?: DashboardContext, tailscaleUsers?: string[]): void {
   const config = parseConfig({ workspace: "w", teamId: "t", repoPath: home.dir, maxAgents: 3 });
   context =
     ctx ??
@@ -54,6 +59,7 @@ function start(ctx?: DashboardContext): void {
     project: { workspace: "w", repo: "r", baseBranch: "main" },
     help: { repoDir: "~/r", configPath: "c.json", platform: "linux" },
     log: recordingLogger().log,
+    tailscaleUsers,
   });
   host = `127.0.0.1:${server.port}`;
   base = `http://${host}`;
@@ -125,6 +131,52 @@ describe("guards", () => {
     const db = openDb(dbPath());
     expect(getFlag(db, killFlag("uuid-1"))).toBeNull();
     db.close();
+  });
+});
+
+describe("tailscaleUsers", () => {
+  test("tailnet user check", () => {
+    const users = ["Me@Example.com"];
+    const ts = "mac.tail1234.ts.net";
+    expect(tailnetUserAllowed(ts, "me@example.com", users)).toBe(true);
+    expect(tailnetUserAllowed(ts, "ME@EXAMPLE.COM", users)).toBe(true);
+    expect(tailnetUserAllowed(ts, "other@example.com", users)).toBe(false);
+    expect(tailnetUserAllowed(ts, null, users)).toBe(false);
+    expect(tailnetUserAllowed(`${ts}:443`, "", users)).toBe(false);
+    expect(tailnetUserAllowed("127.0.0.1:7474", null, users)).toBe(true);
+    expect(tailnetUserAllowed("localhost", null, users)).toBe(true);
+    expect(tailnetUserAllowed("localhost", "other@example.com", users)).toBe(false);
+    expect(tailnetUserAllowed(ts, null, undefined)).toBe(true);
+    expect(tailnetUserAllowed(ts, "anyone@example.com", undefined)).toBe(true);
+  });
+
+  test("with tailscaleUsers set, the guard checks the login on every route", async () => {
+    makeDb();
+    start(undefined, ["me@example.com"]);
+    const ts = "mac.tail1234.ts.net";
+    for (const path of ["/", "/sections", "/handoff/TOD-3", "/assets/dashboard.js", "/nope"]) {
+      const none = await fetch(`${base}${path}`, { headers: { Host: ts } });
+      expect(none.status).toBe(403);
+      const wrong = await fetch(`${base}${path}`, {
+        headers: { Host: ts, "Tailscale-User-Login": "other@example.com" },
+      });
+      expect(wrong.status).toBe(403);
+    }
+    const ok = await fetch(`${base}/`, {
+      headers: { Host: ts, "Tailscale-User-Login": "Me@Example.com" },
+    });
+    expect(ok.status).toBe(200);
+    expect((await fetch(`${base}/`)).status).toBe(200);
+    expect((await fetch(`${base}/`, { headers: { "Tailscale-User-Login": "x@y.z" } })).status).toBe(
+      403,
+    );
+  });
+
+  test("without tailscaleUsers, a ts.net Host needs no login", async () => {
+    makeDb();
+    start();
+    const res = await fetch(`${base}/`, { headers: { Host: "mac.tail1234.ts.net" } });
+    expect(res.status).toBe(200);
   });
 });
 

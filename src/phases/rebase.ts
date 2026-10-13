@@ -1,9 +1,11 @@
-// Last edited: 2026-10-03 18:12 CDT
+// Last edited: 2026-10-12 18:13 PDT
 // Merge detection and rebasing, driven from the claims table on every pulse (spec 5.4). When a
 // Marshall PR merges, every other parked PR is queued (`rebase_after`). One rebase runs at a
 // time, oldest first: `git rebase origin/<base>` + push inline, then CI. Clean and green
 // re-posts the hand-off with a badge. A conflict or red CI launches a resolver agent, which
-// takes a concurrency slot but no daily or window start.
+// takes a concurrency slot but no daily or window start. A parked PR that GitHub reports as
+// conflicting is queued the same way, whatever caused the conflict (a sibling Marshall PR, a
+// human push to the base branch, or a conflict the PR was born with).
 
 import { existsSync, readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
@@ -31,7 +33,7 @@ import {
 import { blockIssue } from "../scheduler/tick.ts";
 import { markDone } from "./done.ts";
 import { RESOLVE_STATUS_FILE, resolvePrompt, runName } from "./names.ts";
-import { viewPr } from "./pr.ts";
+import { CI_REGISTER_GRACE_MS, type PrView, viewPr } from "./pr.ts";
 
 /** The merged PR each in-flight rebase was started for; a later merge re-queues on landing. */
 const inflightFor = new Map<string, string>();
@@ -89,6 +91,25 @@ function queueSiblings(deps: MasterDeps, mergedPr: string, exceptIssue: string):
   }
 }
 
+/**
+ * Queue a parked PR that GitHub says conflicts with the base branch. Only when nothing is queued
+ * already, and only once the claim has sat a grace period: right after a rebase push GitHub
+ * still reports the old answer, and acting on it would loop.
+ */
+function queueConflicting(deps: MasterDeps, claim: Claim, view: PrView): void {
+  if (claim.state !== AWAITING_HUMAN || claim.rebaseAfter) return;
+  if (view.state !== "OPEN" || view.mergeable !== "conflicting") return;
+  if (deps.now().getTime() - Date.parse(claim.updatedAt) < CI_REGISTER_GRACE_MS) return;
+  const after = `${deps.config.baseBranch} (merge conflict)`;
+  const queued = patchClaim(
+    deps.db,
+    claim.issueId,
+    { rebaseAfter: after },
+    deps.now().toISOString(),
+  );
+  emitMaster(deps, queued, "rebase_queued", { after, why: "conflicting" });
+}
+
 /** Poll every parked PR for a merge or a close. Never throws: one bad `gh` call is logged. */
 async function pollMerges(deps: MasterDeps): Promise<void> {
   for (const claim of claimsInStates(deps.db, [AWAITING_HUMAN, REBASING])) {
@@ -107,6 +128,8 @@ async function pollMerges(deps: MasterDeps): Promise<void> {
         queueSiblings(deps, claim.prUrl as string, claim.issueId);
       } else if (view.state === "CLOSED") {
         await release(ctx, "pr_closed");
+      } else {
+        queueConflicting(deps, claim, view);
       }
     } catch (err) {
       deps.log.warn("master.merge_poll_failed", {

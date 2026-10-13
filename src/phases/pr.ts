@@ -1,17 +1,24 @@
-// Last edited: 2026-09-29 19:05 CDT
+// Last edited: 2026-10-12 18:13 PDT
 // One `gh pr view` per poll answers both questions the rebase pulse asks: did this PR merge or
 // close, and is its CI green, red, or still running. `findPrsFor` answers the done sweep's
 // question instead: which PRs carry this issue's ID as their title prefix.
+// The view also reports whether GitHub can merge the PR. CI alone cannot say: a repo with no CI
+// has an empty rollup (read as green), and GitHub skips `pull_request` workflows on a PR whose
+// branch conflicts with its base, so a conflicting PR can look green.
 
 import type { GhRunner } from "../handoff/index.ts";
 
 export type CiState = "green" | "red" | "pending";
+
+/** GitHub's `mergeable` field. `unknown` while GitHub is still computing it after a push. */
+export type Mergeable = "mergeable" | "conflicting" | "unknown";
 
 export interface PrView {
   mergedAt: string | null;
   /** `OPEN`, `MERGED`, or `CLOSED`. */
   state: string;
   ci: CiState;
+  mergeable: Mergeable;
 }
 
 /** GitHub registers check runs a moment after a push; an empty rollup inside this is pending. */
@@ -52,6 +59,12 @@ export function ciStateOf(rollup: unknown, pushedAt: string, now: Date): CiState
   return "green";
 }
 
+function mergeableOf(value: unknown): Mergeable {
+  if (value === "MERGEABLE") return "mergeable";
+  if (value === "CONFLICTING") return "conflicting";
+  return "unknown";
+}
+
 export async function viewPr(
   gh: GhRunner,
   prUrl: string,
@@ -59,12 +72,16 @@ export async function viewPr(
   pushedAt: string,
   now: Date,
 ): Promise<PrView> {
-  const out = await gh(["pr", "view", prUrl, "--json", "mergedAt,state,statusCheckRollup"], cwd);
+  const out = await gh(
+    ["pr", "view", prUrl, "--json", "mergedAt,state,statusCheckRollup,mergeable"],
+    cwd,
+  );
   const parsed = JSON.parse(out) as Record<string, unknown>;
   return {
     mergedAt: typeof parsed.mergedAt === "string" ? parsed.mergedAt : null,
     state: String(parsed.state ?? "OPEN"),
     ci: ciStateOf(parsed.statusCheckRollup, pushedAt, now),
+    mergeable: mergeableOf(parsed.mergeable),
   };
 }
 

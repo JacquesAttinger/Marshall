@@ -1,4 +1,4 @@
-// Last edited: 2026-09-29 19:20 CDT
+// Last edited: 2026-10-12 18:13 PDT
 // Master agent test setup: an in-memory DB, a temp MARSHALL_HOME, a fake clock, and fakes for
 // every injectable seam (runner, waiter, git, gh, the plan and hand-off phases, Linear). Runs are
 // rows the fake runner inserts; a test ends one with `finish(runId, terminal)`.
@@ -58,6 +58,8 @@ export interface PrViewStub {
   mergedAt?: string | null;
   state?: string;
   statusCheckRollup?: unknown[];
+  /** GitHub's `mergeable`; default `MERGEABLE`. */
+  mergeable?: string;
 }
 
 export interface PrListStub {
@@ -251,6 +253,7 @@ function makeGh(): FakeGh {
           statusCheckRollup: stub.statusCheckRollup ?? [
             { __typename: "CheckRun", status: "COMPLETED", conclusion: "SUCCESS" },
           ],
+          mergeable: stub.mergeable ?? "MERGEABLE",
           body: "",
         });
       }

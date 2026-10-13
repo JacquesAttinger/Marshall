@@ -1,4 +1,4 @@
-// Last edited: 2026-10-11 19:10 PDT
+// Last edited: 2026-10-12 18:02 PDT
 // Typed loaders for marshall.config.json (committed, JSONC: `//` and `/* */` comments allowed)
 // and process.env (from .env).
 
@@ -22,6 +22,7 @@ const modelName = z.string().min(1);
 export const ModelsSchema = z
   .object({
     classifier: modelName.default("haiku"),
+    planTrivial: modelName.default("sonnet"),
     planSimple: modelName.default("opus"),
     planComplex: modelName.default("fable"),
     /** The hand-off writer. Falls back to `planSimple`; see `handoffModel()`. */
@@ -67,7 +68,12 @@ export const ConfigSchema = z
      * Off by default since the dry run (2026-09-21): 24 follow-ups from six one-line issues.
      */
     fileFollowUps: z.boolean().default(false),
-    models: ModelsSchema.default({ classifier: "haiku", planSimple: "opus", planComplex: "fable" }),
+    models: ModelsSchema.default({
+      classifier: "haiku",
+      planTrivial: "sonnet",
+      planSimple: "opus",
+      planComplex: "fable",
+    }),
     /**
      * Host ports the target repo's Compose file reads from env, keyed by the env var name
      * (`POSTGRES_HOST_PORT: 5432`). Slot N gets `base + N * portOffsetPerSlot`.

@@ -1,4 +1,4 @@
-// Last edited: 2026-09-20 23:05 CDT
+// Last edited: 2026-10-12 18:02 PDT
 // runPlanPhase end to end with the fake claude shim: its --bg branch runs a script that plays the
 // planner (writes the plan file and commits), then the test appends the Stop hook line and the
 // watcher finishes the run. A fake Linear client records the comment.
@@ -122,6 +122,13 @@ describe("runPlanPhase, fresh", () => {
     expect(comments[0]?.body).toContain(
       "**Decisions made alone**\n\n- Kept the fix in `castlingMoves()`",
     );
+  });
+
+  test("a trivial classification picks planTrivial", async () => {
+    setFakePrint(env, { structured_output: { complexity: "trivial", reason: "typo" } });
+    planScript(copyAndCommit("good_plan.md"));
+    const result = await runPlanPhase(input());
+    expect(result).toMatchObject({ ok: true, model: "sonnet" });
   });
 
   test("a complex classification picks planComplex", async () => {

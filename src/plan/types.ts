@@ -1,4 +1,4 @@
-// Last edited: 2026-09-20 23:00 CDT
+// Last edited: 2026-10-12 18:02 PDT
 // Public shapes for the planning phase. Step 08 builds a PlanPhaseInput and reads the result.
 
 import type { Database } from "bun:sqlite";
@@ -6,7 +6,7 @@ import type { Config } from "../config.ts";
 import type { IssueDetail, LinearClient } from "../linear/index.ts";
 import type { Run, Terminal } from "../runner/index.ts";
 
-export type Complexity = "simple" | "complex";
+export type Complexity = "trivial" | "simple" | "complex";
 
 export interface Classification {
   complexity: Complexity;

@@ -1,4 +1,4 @@
-// Last edited: 2026-09-21 02:15 CDT
+// Last edited: 2026-10-12 18:13 PDT
 
 import { describe, expect, test } from "bun:test";
 import { ciStateOf, findPrsFor, viewPr } from "../../src/phases/pr.ts";
@@ -45,7 +45,7 @@ describe("ciStateOf", () => {
 });
 
 describe("viewPr", () => {
-  test("asks gh for the three fields and folds the answer", async () => {
+  test("asks gh for the four fields and folds the answer", async () => {
     const calls: string[][] = [];
     const gh = async (args: string[]) => {
       calls.push(args);
@@ -62,14 +62,37 @@ describe("viewPr", () => {
       "2026-09-20T18:00:00Z",
       now,
     );
-    expect(view).toEqual({ mergedAt: null, state: "OPEN", ci: "green" });
+    expect(view).toEqual({ mergedAt: null, state: "OPEN", ci: "green", mergeable: "unknown" });
     expect(calls[0]).toEqual([
       "pr",
       "view",
       "https://github.com/x/y/pull/1",
       "--json",
-      "mergedAt,state,statusCheckRollup",
+      "mergedAt,state,statusCheckRollup,mergeable",
     ]);
+  });
+});
+
+describe("viewPr mergeable", () => {
+  const view = (mergeable: unknown) =>
+    viewPr(
+      async () => JSON.stringify({ state: "OPEN", statusCheckRollup: [], mergeable }),
+      "https://github.com/x/y/pull/1",
+      "/wt",
+      "2026-09-20T18:00:00Z",
+      now,
+    );
+
+  test("maps GitHub's mergeable values; anything else is unknown", async () => {
+    expect((await view("MERGEABLE")).mergeable).toBe("mergeable");
+    expect((await view("CONFLICTING")).mergeable).toBe("conflicting");
+    expect((await view("UNKNOWN")).mergeable).toBe("unknown");
+    expect((await view(undefined)).mergeable).toBe("unknown");
+  });
+
+  test("a conflicting PR with no checks still folds to green CI", async () => {
+    const result = await view("CONFLICTING");
+    expect(result).toMatchObject({ ci: "green", mergeable: "conflicting" });
   });
 });
 

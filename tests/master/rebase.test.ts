@@ -1,4 +1,4 @@
-// Last edited: 2026-09-29 19:25 CDT
+// Last edited: 2026-10-12 18:13 PDT
 // Merge detection and the serial rebase queue (spec 5.4, decision 2), driven through the pulse
 // over seeded parked claims: a sibling merge queues the others; a clean rebase re-posts the
 // hand-off with a badge; a conflict or red CI takes a slot for a resolver run; one at a time.
@@ -110,6 +110,60 @@ describe("merge detection", () => {
       "gh: boom",
     );
     expect(getClaim(h.db, "issue-2")?.state).toBe("released");
+  });
+});
+
+describe("conflict detection on parked PRs", () => {
+  const settle = () => h.tickClock(3 * 60_000);
+
+  test("a conflicting PR with no merge behind it is queued, then rebased", async () => {
+    h = makeMasterHarness();
+    parked(2);
+    h.gh.views.set(PR(2), { mergeable: "CONFLICTING", statusCheckRollup: [] });
+    settle();
+    await h.hooks.pulse();
+    expect(masterEvents(h.db, "issue-2")).toContain("rebase_queued");
+    expect(h.git.calls.map((c) => c.op)).toEqual(["fetch", "rebase", "forcePush"]);
+    expect(getClaim(h.db, "issue-2")).toMatchObject({
+      state: "rebasing",
+      rebaseAfter: "main (merge conflict)",
+    });
+  });
+
+  test("a mergeable PR is left alone", async () => {
+    h = makeMasterHarness();
+    parked(2);
+    settle();
+    await h.hooks.pulse();
+    expect(getClaim(h.db, "issue-2")).toMatchObject({ state: "awaiting_human", rebaseAfter: null });
+    expect(h.git.calls).toHaveLength(0);
+  });
+
+  test("an unknown answer waits for the next pulse", async () => {
+    h = makeMasterHarness();
+    parked(2);
+    h.gh.views.set(PR(2), { mergeable: "UNKNOWN" });
+    settle();
+    await h.hooks.pulse();
+    expect(getClaim(h.db, "issue-2")?.rebaseAfter).toBeNull();
+  });
+
+  test("a fresh claim is not acted on: GitHub may still report the pre-push answer", async () => {
+    h = makeMasterHarness();
+    parked(2);
+    h.gh.views.set(PR(2), { mergeable: "CONFLICTING" });
+    await h.hooks.pulse();
+    expect(getClaim(h.db, "issue-2")?.rebaseAfter).toBeNull();
+    expect(h.git.calls).toHaveLength(0);
+  });
+
+  test("a PR already queued behind a sibling merge keeps its original reason", async () => {
+    h = makeMasterHarness();
+    parked(2, "awaiting_human", { rebaseAfter: PR(1) });
+    h.gh.views.set(PR(2), { mergeable: "CONFLICTING" });
+    settle();
+    await h.hooks.pulse();
+    expect(masterEvents(h.db, "issue-2")).not.toContain("rebase_queued");
   });
 });
 

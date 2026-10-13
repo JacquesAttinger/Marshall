@@ -56,8 +56,10 @@
 
   // --- Which Claude model runs which phase (values go straight to `--model`) ---
   "models": {
-    // Sorts each issue into simple or complex before planning. Cheap and fast.
+    // Sorts each issue into trivial, simple, or complex before planning. Cheap and fast.
     "classifier": "haiku",
+    // Writes the plan for trivial issues (a one-line fix with an obvious cause).
+    "planTrivial": "sonnet",
     // Writes the plan for simple issues.
     "planSimple": "opus",
     // Writes the plan for complex issues.

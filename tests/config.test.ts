@@ -1,4 +1,4 @@
-// Last edited: 2026-10-11 19:10 PDT
+// Last edited: 2026-10-12 18:02 PDT
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
@@ -54,6 +54,7 @@ describe("parseConfig", () => {
     expect(config.tailscaleUsers).toBeUndefined();
     expect(config.models).toEqual({
       classifier: "haiku",
+      planTrivial: "sonnet",
       planSimple: "opus",
       planComplex: "fable",
     });
@@ -64,6 +65,7 @@ describe("parseConfig", () => {
     const partial = parseConfig({ ...minimal(), models: { planComplex: "opus" } });
     expect(partial.models).toEqual({
       classifier: "haiku",
+      planTrivial: "sonnet",
       planSimple: "opus",
       planComplex: "opus",
     });

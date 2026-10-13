@@ -1,9 +1,9 @@
 # Planning phase — how it works
 
-<!-- Last edited: 2026-09-20 13:10 CDT -->
+<!-- Last edited: 2026-10-12 18:02 PDT -->
 
 **TLDR:** Marshall turns a claimed Linear issue into a committed plan file with no human in the loop.
-A cheap Haiku call says "simple" or "complex", which picks Opus or Fable.
+A cheap Haiku call says "trivial", "simple" or "complex", which picks Sonnet, Opus or Fable.
 The orchestrator writes a brief file, launches a `/marshall:plan` agent in the worktree, and the agent writes and commits `docs/<topic>_plan.md`.
 After the run, git proves the agent changed nothing else, the headings are checked, and the plan's TLDR is posted to Linear.
 The agent never talks to Linear.
@@ -30,8 +30,8 @@ const result = await runPlanPhase({ db, linear, config, issue, cwd, mode: "fresh
 
 1. **Classify.** `classifyIssue(issue)` runs `claude -p` with the issue's title, description, priority (as a word), labels, and comment count.
    No repo access, no tools, no MCP.
-   The answer is `{ complexity: "simple" | "complex", reason }`.
-   `simple` plans with `config.models.planSimple` (Opus), `complex` with `config.models.planComplex` (Fable).
+   The answer is `{ complexity: "trivial" | "simple" | "complex", reason }`.
+   `trivial` plans with `config.models.planTrivial` (Sonnet), `simple` with `config.models.planSimple` (Opus), `complex` with `config.models.planComplex` (Fable).
    Priority is an input to the classifier, never an override.
 2. **Brief.** `writeBrief()` renders the issue to `~/.marshall/briefs/<runId>.md`.
    The brief holds facts only; the instructions live in the skill.

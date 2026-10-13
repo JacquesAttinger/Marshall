@@ -1,4 +1,4 @@
-// Last edited: 2026-09-20 10:56 CDT
+// Last edited: 2026-10-12 18:02 PDT
 // The Haiku complexity classifier. One `claude -p` call with a JSON schema, no tools, no MCP, no
 // repo access. Complexity alone picks the planner model; priority is an input, never an override.
 
@@ -12,7 +12,7 @@ import { type Classification, PlanError } from "./types.ts";
 
 export const ClassificationSchema = z
   .object({
-    complexity: z.enum(["simple", "complex"]),
+    complexity: z.enum(["trivial", "simple", "complex"]),
     reason: z.string().min(1),
   })
   .strict();
@@ -31,13 +31,17 @@ export function classifierJsonSchema(): Record<string, unknown> {
 const PREAMBLE = `You are a triage classifier for a software team. Read the issue below and decide
 how complex the fix is. Answer with JSON only.
 
+"trivial": a one-line or few-line fix in one place, with an obvious cause and no judgment call.
+A typo, a copy change, a wrong constant, a missing null check, a wrong condition with a clear
+correct value.
+
 "simple": one area of the code, a clear fix, no schema or data migration, no cross-module design
-choice, no new user-facing feature. A typo, a wrong condition, a missing null check, a copy change.
+choice, no new user-facing feature, but more than a one-liner or with some room for judgment.
 
 "complex": a new feature, several areas of the code, an open design choice, a migration, a change
 to a public interface, or an issue whose description leaves the shape of the fix open.
 
-When unsure, answer "complex". Give one sentence of reason.`;
+When unsure between two levels, answer the higher one. Give one sentence of reason.`;
 
 /** The prompt for one issue. Pure, so the tests snapshot it. */
 export function classifierPrompt(issue: PickableIssue): string {
@@ -132,9 +136,14 @@ export async function classifyIssue(
   return parseClassifierOutput(stdout);
 }
 
-/** `simple` → `models.planSimple`, `complex` → `models.planComplex`. */
+/** `trivial` → `models.planTrivial`, `simple` → `models.planSimple`, `complex` → `models.planComplex`. */
 export function modelFor(classification: Classification, config: Config): string {
-  return classification.complexity === "simple"
-    ? config.models.planSimple
-    : config.models.planComplex;
+  switch (classification.complexity) {
+    case "trivial":
+      return config.models.planTrivial;
+    case "simple":
+      return config.models.planSimple;
+    case "complex":
+      return config.models.planComplex;
+  }
 }

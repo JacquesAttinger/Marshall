@@ -1,4 +1,4 @@
-// Last edited: 2026-09-20 10:56 CDT
+// Last edited: 2026-10-12 18:02 PDT
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { readFileSync, realpathSync } from "node:fs";
@@ -44,7 +44,7 @@ describe("classifierPrompt / classifierArgv", () => {
     expect(argv[5]).toBe("--json-schema");
     const schema = JSON.parse(argv[6] as string);
     expect(schema.$schema).toBeUndefined();
-    expect(schema.properties.complexity.enum).toEqual(["simple", "complex"]);
+    expect(schema.properties.complexity.enum).toEqual(["trivial", "simple", "complex"]);
     expect(schema.required).toEqual(["complexity", "reason"]);
     expect(schema.additionalProperties).toBe(false);
     expect(argv.slice(7)).toEqual([
@@ -137,8 +137,9 @@ describe("modelFor", () => {
       workspace: "w",
       teamId: "t",
       repoPath: env.home.dir,
-      models: { planSimple: "opus", planComplex: "fable" },
+      models: { planTrivial: "sonnet", planSimple: "opus", planComplex: "fable" },
     });
+    expect(modelFor({ complexity: "trivial", reason: "" }, config)).toBe("sonnet");
     expect(modelFor({ complexity: "simple", reason: "" }, config)).toBe("opus");
     expect(modelFor({ complexity: "complex", reason: "" }, config)).toBe("fable");
   });

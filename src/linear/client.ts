@@ -1,4 +1,4 @@
-// Last edited: 2026-10-18 15:59 PDT
+// Last edited: 2026-10-18 16:01 PDT
 // The one module that talks to Linear. Every read or write Marshall makes goes through LinearClient.
 // Claim lock = state In Progress + one `marshall/agent-<slot>` label. `delegate` waits for the
 // iteration 2 OAuth agent, because the API only accepts agent users there.
@@ -13,7 +13,7 @@ import {
   agentLabelIdsOn,
   agentLabelName,
   agentLabelsOf,
-  BLOCKED_STATE,
+  DEFAULT_STATES,
   DONE_STATE,
   HAS_PLAN_LABEL,
   HUMAN_ONLY_LABEL,
@@ -21,7 +21,6 @@ import {
   type IssueDetail,
   isAgentId,
   MARSHALL_COMMENT_FOOTER,
-  NEEDS_VERIFICATION_STATE,
   type PickableIssue,
   QUEUED_LABEL,
   TODO_STATE,
@@ -44,12 +43,6 @@ import {
   UpdateIssue,
   Viewer,
 } from "./queries.ts";
-
-/** The status names a project gets when its config sets none. */
-export const DEFAULT_STATES: StateNames = {
-  needsVerification: NEEDS_VERIFICATION_STATE,
-  blocked: BLOCKED_STATE,
-};
 
 export interface ViewerInfo {
   userId: string;

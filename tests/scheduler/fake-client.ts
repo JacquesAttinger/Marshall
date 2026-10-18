@@ -1,4 +1,4 @@
-// Last edited: 2026-10-18 15:59 PDT
+// Last edited: 2026-10-18 16:01 PDT
 // An in-memory LinearClient for scheduler tests. Keeps each issue's state and agent labels and
 // applies the same claim rules as the real client (unstarted + no agent label = claimable).
 // `tests/linear/fake-linear.ts` fakes the transport instead; this fakes the client.
@@ -6,12 +6,14 @@
 import type { StateNames } from "../../src/config.ts";
 import {
   agentLabelName,
+  DEFAULT_STATES,
   type IssueDetail,
   isAgentId,
   type LinearClient,
   MARSHALL_LABEL_GROUP,
   type PickableIssue,
 } from "../../src/linear/index.ts";
+import { reviewableStateNames } from "../../src/linear/queries.ts";
 
 export interface FakeIssue {
   issue: PickableIssue;
@@ -107,13 +109,11 @@ function listings(map: Map<string, FakeIssue>, calls: FakeCall[], states: StateN
     },
     async listAwaitingMerge() {
       calls.push({ method: "listAwaitingMerge", issueId: "" });
-      const names = [states.needsVerification, states.blocked];
+      const names = reviewableStateNames(states);
       return [...map.values()].filter((i) => names.includes(i.state.name)).map((i) => i.issue);
     },
   };
 }
-
-const DEFAULT_STATES: StateNames = { needsVerification: "Needs Verification", blocked: "Blocked" };
 
 export function fakeClient(
   issues: PickableIssue[] = [],

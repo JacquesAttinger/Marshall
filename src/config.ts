@@ -1,11 +1,11 @@
-// Last edited: 2026-10-18 15:59 PDT
+// Last edited: 2026-10-18 16:01 PDT
 // Typed loaders for marshall.config.json (committed, JSONC: `//` and `/* */` comments allowed)
 // and process.env (from .env).
 
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { basename, resolve } from "node:path";
 import { z } from "zod";
-import { BLOCKED_STATE, NEEDS_VERIFICATION_STATE } from "./linear/map.ts";
+import { DEFAULT_STATES, DONE_STATE, IN_PROGRESS_STATE, TODO_STATE } from "./linear/map.ts";
 import { expandTilde } from "./paths.ts";
 
 const REPO_ROOT = resolve(import.meta.dir, "..");
@@ -49,16 +49,16 @@ const repoPath = z
 export const StatesSchema = z
   .object({
     /** Where a finished issue waits for a human: PR open, hand-off posted. */
-    needsVerification: z.string().min(1).default(NEEDS_VERIFICATION_STATE),
+    needsVerification: z.string().min(1).default(DEFAULT_STATES.needsVerification),
     /** Where a stuck issue is parked until a human moves it back to Todo. */
-    blocked: z.string().min(1).default(BLOCKED_STATE),
+    blocked: z.string().min(1).default(DEFAULT_STATES.blocked),
   })
   .strict();
 
 export type StateNames = z.infer<typeof StatesSchema>;
 
 /** Statuses Marshall already uses for its own purposes; a custom name may not reuse them. */
-const RESERVED_STATES = ["Todo", "In Progress", "Done"];
+const RESERVED_STATES = [TODO_STATE, IN_PROGRESS_STATE, DONE_STATE];
 
 const envVarName = /^[A-Z][A-Z0-9_]*$/;
 
@@ -100,10 +100,7 @@ const ConfigObjectSchema = z
     /** Optional Linear project (a grouping inside the team) that narrows the pick-up further. */
     linearProjectId: z.string().min(1).optional(),
     /** Names of the two statuses Marshall moves issues into (default `Needs Verification`, `Blocked`). */
-    states: StatesSchema.default({
-      needsVerification: NEEDS_VERIFICATION_STATE,
-      blocked: BLOCKED_STATE,
-    }),
+    states: StatesSchema.default(DEFAULT_STATES),
     /**
      * Which plugin skill implements a plan: `implement`, or `implement-hemut` (Hemut policy, one PR
      * per repo, never merges). The resolver and the hand-off writer do not change.

@@ -1,4 +1,4 @@
-<!-- Last edited: 2026-10-18 15:59 PDT -->
+<!-- Last edited: 2026-10-18 16:01 PDT -->
 
 # Plan: Configurable status names
 
@@ -69,8 +69,22 @@ Jacques is not a workspace admin, and `marshall linear setup` failed with `Canno
 - Backlog as the "Blocked" name for Hemut. It is one config line, so changing it costs nothing.
 - The label filter on the merge sweep applies only in `labeled` mode, so existing projects keep their sweep.
 
+## Added during review
+
+- The config refuses a status name that is `Todo`, `In Progress`, or `Done`, and refuses two equal names.
+  Marshall already uses those three for other purposes, and equal names would make the two states mean one thing.
+- `StatesSchema` is strict: an unknown key under `states` fails the load, like every other settings block.
+- `LinearClient` has a public `states` field, so the hand-off and the block path read the names from the client they already hold.
+- `src/cli/kill.ts` and `src/cli/plan.ts` pass the settings too, because both connect to Linear.
+- In the default `assigned` mode, custom names such as `In Review` make the merge sweep list every issue the user has in those statuses.
+  The sweep only marks an issue Done when a merged PR title carries the issue ID, so the risk is low.
+  Use `pickup: "labeled"` with busy status names.
+
 ## Out of scope found
 
+- The dashboard "Add project" flow (`src/project-setup/pipeline.ts`) writes a config with no `states` key and calls setup with the default names.
+  A project made there on a team without admin rights fails at setup, and can be fixed by adding `states` to its config.
+  Making that flow ask for the names is a separate change.
 - The dashboard and `marshall status` still print "Needs Verification" and "Blocked" as display words.
   They describe Marshall's two claim states, not Linear names, so they stay.
 

@@ -1,4 +1,4 @@
-// Last edited: 2026-10-18 13:17 PDT
+// Last edited: 2026-10-18 16:01 PDT
 // Public surface of the Linear module. Steps 06, 07, and 08 import from here.
 
 export {
@@ -26,6 +26,7 @@ export {
   type AgentId,
   agentLabelName,
   BLOCKED_STATE,
+  DEFAULT_STATES,
   HAS_PLAN_LABEL,
   HUMAN_ONLY_LABEL,
   IN_PROGRESS_STATE,

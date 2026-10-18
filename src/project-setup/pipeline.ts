@@ -1,4 +1,4 @@
-// Last edited: 2026-10-11 19:45 PDT
+// Last edited: 2026-10-18 13:17 PDT
 // `createProject`: the "add a project" pipeline. Eight steps, run in order, each reported as
 // `{ step, ok, detail }`; the first failure stops the run. Every step is safe to run again (a step
 // that is already done says "Already done"), so a failed run is fixed by pressing Create again.

@@ -1,4 +1,4 @@
-// Last edited: 2026-09-29 19:20 CDT
+// Last edited: 2026-10-18 13:17 PDT
 // An in-memory LinearClient for scheduler tests. Keeps each issue's state and agent labels and
 // applies the same claim rules as the real client (unstarted + no agent label = claimable).
 // `tests/linear/fake-linear.ts` fakes the transport instead; this fakes the client.

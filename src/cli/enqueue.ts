@@ -1,4 +1,4 @@
-// Last edited: 2026-10-18 15:10 PDT
+// Last edited: 2026-10-18 13:17 PDT
 // `marshall enqueue <plan-file> [--dry-run] [--json]` queues a finished plan for the next night run:
 // it checks the plan, then files a Todo issue assigned to you with the plan as the body and the
 // `marshall:queued` and `marshall:has-plan` labels. The scheduler picks the issue up, skips the
@@ -47,7 +47,8 @@ export async function enqueuePlan(input: {
   knownRepos?: string[];
 }): Promise<EnqueueReport> {
   const text = input.text.trim();
-  const check = checkIntakePlan(text);
+  // With more than one repo in the config, the plan has to name the ones it touches.
+  const check = checkIntakePlan(text, (input.knownRepos?.length ?? 0) > 1);
   const problems = [...check.problems];
   const title = planTitle(text);
   if (!title) problems.push("the plan has no `# Title` line");

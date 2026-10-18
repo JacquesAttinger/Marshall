@@ -1,4 +1,4 @@
-// Last edited: 2026-10-12 18:13 PDT
+// Last edited: 2026-10-18 13:17 PDT
 // Merge detection and rebasing, driven from the claims table on every pulse (spec 5.4). When a
 // Marshall PR merges, every other parked PR is queued (`rebase_after`). One rebase runs at a
 // time, oldest first: `git rebase origin/<base>` + push inline, then CI. Clean and green
@@ -35,7 +35,7 @@ import {
 } from "../scheduler/index.ts";
 import { blockIssue } from "../scheduler/tick.ts";
 import { markDone } from "./done.ts";
-import { verdictOf, viewSiblingPrs } from "./multi.ts";
+import { dropRebaseIfMerged, prUrlsOf, repoOfPr, verdictOf, viewSiblingPrs } from "./multi.ts";
 import { RESOLVE_STATUS_FILE, resolvePrompt, runName } from "./names.ts";
 import { CI_REGISTER_GRACE_MS, type PrView, viewPr } from "./pr.ts";
 
@@ -81,10 +81,17 @@ async function release(
   }
 }
 
-/** A sibling merged: every other parked PR gets `rebase_after` set to it. */
+/**
+ * A PR merged: every other parked PR in the same repo gets `rebase_after` set to it. A PR in
+ * another repo is not touched, since its base branch did not move. A URL that is not a GitHub PR
+ * URL cannot be compared, so it queues everything, as it always did.
+ */
 function queueSiblings(deps: MasterDeps, mergedPr: string, exceptIssue: string): void {
+  const mergedRepo = repoOfPr(mergedPr);
   for (const other of claimsInStates(deps.db, [AWAITING_HUMAN, REBASING, RESOLVING])) {
     if (other.issueId === exceptIssue || !other.prUrl) continue;
+    const otherRepo = repoOfPr(other.prUrl);
+    if (mergedRepo && otherRepo && mergedRepo !== otherRepo) continue;
     const queued = patchClaim(
       deps.db,
       other.issueId,
@@ -127,10 +134,13 @@ async function pollMerges(deps: MasterDeps): Promise<void> {
         claim.updatedAt,
         deps.now(),
       );
-      const verdict = verdictOf(view, await viewSiblingPrs(deps, claim));
+      const siblings = await viewSiblingPrs(deps, claim);
+      const verdict = verdictOf(view, siblings.views, siblings.missing);
       if (verdict === "merged") {
+        const urls = prUrlsOf(deps, claim);
         await release(ctx, "pr_merged", view.mergedAt);
-        queueSiblings(deps, claim.prUrl as string, claim.issueId);
+        // Each merged PR moved its own repo's base branch: queue the waiting PRs of that repo.
+        for (const url of urls) queueSiblings(deps, url, claim.issueId);
       } else if (verdict === "closed") {
         await release(ctx, "pr_closed");
       } else if (verdict === "open") {
@@ -364,6 +374,7 @@ async function startNextRebase(deps: MasterDeps): Promise<void> {
   const ctx = ctxOf(deps, next);
   if (!ctx) return;
   const cwd = cwdOf(ctx);
+  if (await dropRebaseIfMerged(deps, next, cwd)) return;
   await ctx.git.fetch(cwd);
   const clean = await ctx.git.rebase(cwd, claimBase(ctx.db, ctx.config, ctx.claim.issueId));
   if (clean) {

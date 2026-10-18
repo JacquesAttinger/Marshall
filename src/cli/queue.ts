@@ -1,4 +1,4 @@
-// Last edited: 2026-10-18 13:25 PDT
+// Last edited: 2026-10-18 13:17 PDT
 // `marshall queue [--json]` — a dry run of one scheduler tick. Prints the ordered pickable list and,
 // for each issue, what the next tick would do with it and why. Reads Linear and the DB; writes nothing.
 
@@ -15,6 +15,7 @@ import { migrate, openDb } from "../db/index.ts";
 import {
   connectLinear,
   isHumanOnly,
+  isOptedIn,
   type LinearClient,
   type PickableIssue,
 } from "../linear/index.ts";
@@ -122,7 +123,7 @@ function rowFor(issue: PickableIssue, db: Database, config: Config, counts: CapC
       status: "human_only",
     };
   }
-  if (config.pickup === "labeled" && !issue.labels.includes(config.pickupLabel)) {
+  if (!isOptedIn({ mode: config.pickup, label: config.pickupLabel }, issue.labels)) {
     return {
       ...base,
       kind: "not_queued",

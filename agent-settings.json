@@ -5,6 +5,13 @@
   "env": { "ANTHROPIC_DEFAULT_FABLE_MODEL": "claude-fable-5[1m]" },
   "effortLevel": "high",
   "permissions": {
-    "deny": ["Bash(gh pr merge:*)", "Bash(gh pr merge *)"]
+    "deny": [
+      "Bash(gh pr merge:*)",
+      "Bash(gh pr merge *)",
+      "Bash(gh pr review --approve:*)",
+      "Bash(git push origin staging:*)",
+      "Bash(git push origin main:*)",
+      "Bash(git push origin master:*)"
+    ]
   }
 }

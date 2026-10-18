@@ -1,4 +1,4 @@
-// Last edited: 2026-10-18 14:30 PDT
+// Last edited: 2026-10-18 13:17 PDT
 // Shapes for the master agent: the phase states it writes to `claims.state`, the events it
 // records, and the injectable seams (runner, git, gh, phases) so the state machine is tested
 // with fakes and a fake clock, never with a live agent.

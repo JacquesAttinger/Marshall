@@ -1,4 +1,4 @@
-// Last edited: 2026-10-18 14:20 PDT
+// Last edited: 2026-10-18 13:17 PDT
 // Pure mappers from Linear's raw issue shape to Marshall's types. No fetch, so tests hit them directly.
 
 import type { RawIssue, RawIssueDetail } from "./queries.ts";
@@ -93,6 +93,15 @@ export function agentLabelOf(labels: RawLabel[]): AgentId | null {
 
 export function isHumanOnly(labels: string[]): boolean {
   return labels.includes(HUMAN_ONLY_LABEL);
+}
+
+/**
+ * True when the pick-up rule lets this issue start: always in `assigned` mode, and only with the
+ * opt-in label in `labeled` mode. The query filters on it; the scheduler and `marshall queue`
+ * check it again from the labels they hold.
+ */
+export function isOptedIn(pickup: { mode: string; label: string }, labels: string[]): boolean {
+  return pickup.mode !== "labeled" || labels.includes(pickup.label);
 }
 
 /** The issue carries a finished plan in its body, so the planner is skipped. */

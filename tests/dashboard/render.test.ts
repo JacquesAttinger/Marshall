@@ -1,4 +1,4 @@
-// Last edited: 2026-10-11 19:38 PDT
+// Last edited: 2026-10-18 13:17 PDT
 // The dashboard's pure templates: escaping, the hand-off sanitizer, every empty state, each card
 // and panel variant, every queue status code, and the page shell's CSP-friendly markup.
 

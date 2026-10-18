@@ -1,4 +1,4 @@
-// Last edited: 2026-10-03 18:27 CDT
+// Last edited: 2026-10-18 13:17 PDT
 // Builders for the dashboard's view data, so render tests state only the field they are about.
 
 import type { QueueReport, QueueRow } from "../../src/cli/queue.ts";

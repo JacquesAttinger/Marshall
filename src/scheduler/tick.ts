@@ -1,10 +1,10 @@
-// Last edited: 2026-10-18 16:30 PDT
+// Last edited: 2026-10-18 13:17 PDT
 // One pass of the scheduler: order the pickable issues and start what the caps allow. Each start
 // writes a `claiming` row before it touches Linear, so a crash in the middle leaves a row reconcile
 // can repair instead of an issue that is In Progress and invisible.
 
 import { capCheck, isPaused } from "../caps.ts";
-import { BLOCKED_STATE, isHumanOnly, type PickableIssue } from "../linear/index.ts";
+import { BLOCKED_STATE, isHumanOnly, isOptedIn, type PickableIssue } from "../linear/index.ts";
 import { resolveRepos } from "../repos.ts";
 import { claimRepos, setClaimRepos } from "./repos.ts";
 import {
@@ -177,7 +177,7 @@ export async function consider(deps: SchedulerDeps, issue: PickableIssue): Promi
   }
   // Same belt and suspenders for `pickup: "labeled"`: the query only returns queued issues, but a
   // human who removes the label after the list was read must still stop the start.
-  if (config.pickup === "labeled" && !issue.labels.includes(config.pickupLabel)) {
+  if (!isOptedIn({ mode: config.pickup, label: config.pickupLabel }, issue.labels)) {
     log.debug("scheduler.skip_not_queued", { issueId: issue.id, identifier: issue.identifier });
     return skipped(issue, false, "not_queued");
   }

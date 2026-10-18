@@ -1,4 +1,4 @@
-<!-- Last edited: 2026-10-18 21:10 PDT -->
+<!-- Last edited: 2026-10-18 13:17 PDT -->
 
 # Hemut overnight queue — runbook
 
@@ -16,7 +16,8 @@ Policy the agents follow: `~/code/hemut3/CLAUDE.md`, copied into `plugin/skills/
 
 1. **Write a plan.**
    Use any plan file that has three H2 sections in this order: `TLDR`, `Plan`, `Verification`.
-   If the plan touches more than one repo, add a `## Repos touched` section.
+   Because the Hemut config lists several repos, every plan needs a `## Repos touched` section, even a plan for one repo.
+   `marshall enqueue` and the scheduler both refuse a plan without it.
    Each repo is one bullet, in merge order, with its role:
 
    ```markdown
@@ -29,7 +30,7 @@ Policy the agents follow: `~/code/hemut3/CLAUDE.md`, copied into `plugin/skills/
    Exactly one repo is `primary`.
    The primary repo is where the agent starts, where the plan file is committed, and where `MARSHALL_BASE_BRANCH` points.
    The repo slugs must match the `repos` list in `marshall.hemut.config.json`.
-   A plan with no `## Repos touched` section works in the first repo of that list (`Command`).
+   A project with only one repo does not need the section; its plans work in that repo.
 2. **Check it.**
    `marshall enqueue docs/my_plan.md --dry-run` checks the plan and writes nothing.
 3. **Queue it.**
@@ -67,10 +68,12 @@ Policy the agents follow: `~/code/hemut3/CLAUDE.md`, copied into `plugin/skills/
    `gh api repos/Hemut2025/<repo>/rules/branches/staging`.
    Do not add a repo where that call shows no `pull_request` rule.
 2. **Deny rules.**
-   `agent-settings.json` denies `gh pr merge` for every agent.
+   `agent-settings.json` denies `gh pr merge`, `gh pr review --approve`, and `git push origin staging|main|master` for every agent.
 3. **Guard hook.**
    `scripts/merge-guard.ts` runs before every Bash call an agent makes.
-   It denies `gh pr merge`, `gh pr review --approve`, `gh api` calls that merge or enable auto-merge, and `git push` to `staging`, `main`, `master`, or any base branch of the run.
+   It reads the command as shell words, so quoted text is not mistaken for a command, and wrappers such as `bash -c`, `eval`, and `env` are seen through.
+   It denies `gh pr merge`, `gh pr review --approve`, `gh api` calls that merge, approve, or enable auto-merge, and `git push` to `staging`, `main`, `master`, or any base branch of the run.
+   It fails closed: if it cannot run or cannot judge a command, the command is blocked.
    Each denial is written to the run's events file.
    A live agent run was blocked by this hook on 2026-10-18.
 
@@ -110,7 +113,7 @@ Agents that already run keep running; `marshall kill <ID>` stops one.
 ## Things to know
 
 - **Sibling PRs are not auto-rebased.**
-  Marshall rebases the primary repo's PR when another Marshall PR merges.
+  Marshall rebases a parked primary PR when another Marshall PR merges in the same repo.
   It does not rebase the sibling repos' PRs.
   If `staging` moves and GitHub asks for an update, press "Update branch" on the sibling PR.
 - **A sibling PR can show red CI** until the migration it needs has merged.

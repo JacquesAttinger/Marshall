@@ -1,4 +1,4 @@
-// Last edited: 2026-10-18 14:10 PDT
+// Last edited: 2026-10-18 13:17 PDT
 // Plan intake: an issue that carries a finished plan (label `marshall:has-plan`, plan text in the
 // issue body) skips the planner. This module checks the text, writes it to `docs/<topic>_plan.md`
 // in the worktree, and commits it as the branch's first commit, so the plan lands in the PR the
@@ -65,8 +65,11 @@ export function parseReposTouched(text: string): RepoRef[] {
   return repos;
 }
 
-/** Everything wrong with an intake plan, as readable problems. Pure: no file or git access. */
-export function checkIntakePlan(text: string): IntakeCheck {
+/**
+ * Everything wrong with an intake plan, as readable problems. Pure: no file or git access.
+ * `requireRepos` is true for a project with several repos: the plan must then say where to work.
+ */
+export function checkIntakePlan(text: string, requireRepos = false): IntakeCheck {
   const problems: string[] = [];
   if (text.length > MAX_PLAN_CHARS) {
     problems.push(`the plan is ${text.length} characters; Linear takes at most ${MAX_PLAN_CHARS}`);
@@ -75,6 +78,11 @@ export function checkIntakePlan(text: string): IntakeCheck {
   if (missing.length > 0) problems.push(`missing sections: ${missing.join(", ")}`);
   if (misordered.length > 0) problems.push(`sections out of order: ${misordered.join(", ")}`);
   const repos = parseReposTouched(text);
+  if (requireRepos && repos.length === 0) {
+    problems.push(
+      `missing section: "${REPOS_TOUCHED_HEADING}" (this project has several repos, so the plan must list them)`,
+    );
+  }
   const primaries = repos.filter((r) => r.role === "primary").length;
   if (repos.length > 0 && primaries !== 1) {
     problems.push(`"${REPOS_TOUCHED_HEADING}" needs exactly one primary repo, found ${primaries}`);

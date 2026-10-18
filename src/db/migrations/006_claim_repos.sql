@@ -1,4 +1,4 @@
--- Last edited: 2026-10-18 16:10 PDT
+-- Last edited: 2026-10-18 13:17 PDT
 -- Multi-repo claims: one row per repo a claim touches, only for claims that touch more than one.
 -- A claim with no rows here is a single-repo claim, exactly as before. The primary repo's worktree
 -- is also `claims.worktree_path`; this table adds the siblings and each repo's own PR.

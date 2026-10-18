@@ -1,4 +1,4 @@
-// Last edited: 2026-10-18 14:30 PDT
+// Last edited: 2026-10-18 13:17 PDT
 // Public API of the planning phase. Step 08 imports from here and nowhere else in src/plan.
 
 export { briefPath, priorityWord, renderBrief, writeBrief } from "./brief.ts";

@@ -1,4 +1,4 @@
-// Last edited: 2026-10-18 16:25 PDT
+// Last edited: 2026-10-18 13:17 PDT
 // Open one worktree per repo of a claim, all on the same branch name, so one agent can work in
 // every repo a plan touches. The primary repo's worktree comes first and is the claim's cwd.
 

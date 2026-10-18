@@ -1,4 +1,4 @@
-// Last edited: 2026-10-18 18:00 PDT
+// Last edited: 2026-10-18 13:17 PDT
 // A multi-repo plan through the scheduler: one worktree per repo on one branch, the primary's path on
 // the claim, the sibling rows, and a plan that names an unknown repo blocking cleanly.
 

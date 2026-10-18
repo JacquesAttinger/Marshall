@@ -1,4 +1,4 @@
-// Last edited: 2026-10-18 20:20 PDT
+// Last edited: 2026-10-18 13:17 PDT
 // Builds the inline `--settings` JSON for one agent run: the committed agent-settings.json
 // plus a command hook per lifecycle event that appends to this run's events file.
 
@@ -91,7 +91,8 @@ export function buildAgentSettings(
     hooks: [
       {
         type: "command",
-        command: `bun ${shellQuote(MERGE_GUARD_PATH)} ${shellQuote(eventsFile(runId))}`,
+        // `|| exit 2`: if the guard cannot run (no bun, a crash), the call is blocked, not allowed.
+        command: `bun ${shellQuote(MERGE_GUARD_PATH)} ${shellQuote(eventsFile(runId))} || exit 2`,
         timeout: 5,
       },
     ],

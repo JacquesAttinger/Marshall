@@ -1,6 +1,8 @@
-// Last edited: 2026-10-18 19:40 PDT
+// Last edited: 2026-10-18 13:17 PDT
 // Names the phases and the plugin skills agree on: run names (`<ID> <phase>`, what the master
 // agent looks up after a restart), the prompts, and the planner's revision commit subject.
+
+import type { Config } from "../config.ts";
 
 export type PhaseRunKind = "plan" | "implement" | "handoff" | "resolve";
 
@@ -14,7 +16,7 @@ export function PLAN_REVISION_SUBJECT(revision: number): string {
 }
 
 /** The plugin skill that implements a plan: `implement`, or `implement-hemut` (config.implementSkill). */
-export type ImplementSkill = "implement" | "implement-hemut";
+export type ImplementSkill = Config["implementSkill"];
 
 export function implementPrompt(
   planPath: string,
@@ -41,6 +43,3 @@ export function implementResumePrompt(skill: ImplementSkill = "implement"): stri
     `/marshall:${skill} from the phase it records. The PR, if any, is reused, never recreated.`
   );
 }
-
-/** The resume nudge for the default skill. */
-export const IMPLEMENT_RESUME_PROMPT = implementResumePrompt();

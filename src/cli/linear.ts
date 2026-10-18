@@ -1,4 +1,4 @@
-// Last edited: 2026-09-22 12:52 CDT
+// Last edited: 2026-10-18 13:17 PDT
 // `marshall linear setup [--json]` — create the state and labels the loop needs. Idempotent.
 
 import { loadConfig, loadEnv, requireLinearApiKey } from "../config.ts";

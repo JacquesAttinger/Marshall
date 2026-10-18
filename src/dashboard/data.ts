@@ -1,4 +1,4 @@
-// Last edited: 2026-10-03 18:27 CDT
+// Last edited: 2026-10-18 13:17 PDT
 // Everything the dashboard shows, read from the DB and the files the agents write. The slow or
 // remote inputs (launchd, the daemon's session roster, Linear) are fetched by the caller and
 // passed in, so this module is pure over the DB and the filesystem. Each per-item file read is

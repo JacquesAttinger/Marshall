@@ -1,4 +1,4 @@
-// Last edited: 2026-09-21 01:40 CDT
+// Last edited: 2026-10-18 13:17 PDT
 // The operational sections of `marshall status` over a seeded DB: agents × runs with the model per
 // phase, the needs-you list with hand-off paths, the daemon and pause lines, and the queue fallback.
 // The launchctl runner is faked; the queue is injected.

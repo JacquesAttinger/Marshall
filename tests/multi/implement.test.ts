@@ -1,4 +1,4 @@
-// Last edited: 2026-10-18 18:10 PDT
+// Last edited: 2026-10-18 13:17 PDT
 // The implement phase on a multi-repo claim: sibling worktrees reach the agent, and the PR it opened
 // in each repo is read back from implement.json onto the claim's repo rows.
 

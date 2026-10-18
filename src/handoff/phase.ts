@@ -1,4 +1,4 @@
-// Last edited: 2026-09-20 23:35 CDT
+// Last edited: 2026-10-18 13:17 PDT
 // The hand-off phase: read implement.json → snapshot the worktree → launch `/marshall:handoff` →
 // wait → prove the worktree did not change → validate the file → resume once with the problems
 // if it is invalid → post. Mirrors src/plan/phase.ts; step 08 makes one call, runHandoffPhase.

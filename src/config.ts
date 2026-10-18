@@ -1,4 +1,4 @@
-// Last edited: 2026-10-18 16:00 PDT
+// Last edited: 2026-10-18 13:17 PDT
 // Typed loaders for marshall.config.json (committed, JSONC: `//` and `/* */` comments allowed)
 // and process.env (from .env).
 

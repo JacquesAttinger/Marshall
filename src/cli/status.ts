@@ -1,4 +1,4 @@
-// Last edited: 2026-09-21 01:10 CDT
+// Last edited: 2026-10-18 13:17 PDT
 // `marshall status [--json]` — config, state dir, schema version, row counts, then the operational
 // sections from status-ops.ts: daemon, agents, queue, needs you. The queue needs Linear, so it is
 // attempted only when the DB exists and a key is set; everything else works offline.

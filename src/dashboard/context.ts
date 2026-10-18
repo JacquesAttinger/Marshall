@@ -1,4 +1,4 @@
-// Last edited: 2026-10-18 13:25 PDT
+// Last edited: 2026-10-18 13:17 PDT
 // The dashboard's long-lived state: one DB handle (opened without `migrate()`, so it never races
 // the daemon's migration at login), the 4 s section cache, the 60 s Linear cache, and the
 // hand-off reader. The server asks this module for data and never touches the DB itself.

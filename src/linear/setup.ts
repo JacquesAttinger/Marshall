@@ -1,4 +1,4 @@
-// Last edited: 2026-10-18 13:40 PDT
+// Last edited: 2026-10-18 13:17 PDT
 // Idempotent workspace setup: the Needs Verification and Blocked states, the agent-filed and
 // human-only labels, and the marshall label group with one child per agent slot. Reads team
 // metadata once, creates only what is missing.

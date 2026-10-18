@@ -1,4 +1,4 @@
-// Last edited: 2026-10-18 20:55 PDT
+// Last edited: 2026-10-18 13:17 PDT
 // The committed Hemut config must keep parsing, and must keep the safety settings the runbook relies on.
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";

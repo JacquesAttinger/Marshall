@@ -1,4 +1,4 @@
-// Last edited: 2026-10-18 19:50 PDT
+// Last edited: 2026-10-18 13:17 PDT
 // The Hemut implement skill and the multi-repo wording in the shared skills. An agent that never
 // reads a rule cannot follow it, so each rule that matters is pinned here as text.
 

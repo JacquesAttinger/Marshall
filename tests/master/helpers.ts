@@ -1,4 +1,4 @@
-// Last edited: 2026-10-12 18:13 PDT
+// Last edited: 2026-10-18 13:17 PDT
 // Master agent test setup: an in-memory DB, a temp MARSHALL_HOME, a fake clock, and fakes for
 // every injectable seam (runner, waiter, git, gh, the plan and hand-off phases, Linear). Runs are
 // rows the fake runner inserts; a test ends one with `finish(runId, terminal)`.

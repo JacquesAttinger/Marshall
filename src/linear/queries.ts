@@ -1,9 +1,10 @@
-// Last edited: 2026-10-18 14:20 PDT
+// Last edited: 2026-10-18 13:17 PDT
 // One GraphQL document plus its Zod response schema per Linear operation Marshall uses.
 // Field names follow Linear's public schema. Keep documents minimal: every field costs complexity.
 
 import { z } from "zod";
-import { BLOCKED_STATE, HUMAN_ONLY_LABEL, NEEDS_VERIFICATION_STATE } from "./map.ts";
+import type { PickupOptions } from "../config.ts";
+import { BLOCKED_STATE, HUMAN_ONLY_LABEL, NEEDS_VERIFICATION_STATE, QUEUED_LABEL } from "./map.ts";
 
 export interface Operation<T> {
   name: string;
@@ -112,21 +113,14 @@ export const TeamMetaOp: Operation<z.infer<typeof TeamMetaSchema>> = {
   schema: TeamMetaSchema,
 };
 
-/** How the pick-up query narrows the team's Todo list. Mirrors `PickupOptions` in `config.ts`. */
-export interface PickupFilter {
-  mode: "assigned" | "labeled";
-  label: string;
-  projectId?: string;
-}
-
-const DEFAULT_PICKUP: PickupFilter = { mode: "assigned", label: "marshall:queued" };
+const DEFAULT_PICKUP: PickupOptions = { mode: "assigned", label: QUEUED_LABEL };
 
 /**
  * The pickable list: unstarted, assigned to Marshall's user, never `human-only`. In `labeled` mode
  * the issue must also carry the opt-in label (passed as a variable, never spliced into the text).
  */
 export function pickableIssuesOp(
-  pickup: PickupFilter = DEFAULT_PICKUP,
+  pickup: PickupOptions = DEFAULT_PICKUP,
 ): Operation<{ issues: { nodes: RawIssue[] } }> {
   const labeled = pickup.mode === "labeled";
   const vars = ["$teamId: ID!", "$assigneeId: ID!"];
@@ -158,9 +152,6 @@ query PickableIssues(${vars.join(", ")}) {
     schema: z.object({ issues: z.object({ nodes: z.array(RawIssueSchema) }) }),
   };
 }
-
-/** The `assigned`-mode query, kept for callers that do not care about the pick-up setting. */
-export const PickableIssues = pickableIssuesOp();
 
 /**
  * Issues a human has not closed yet whose PR may already be merged: Needs Verification and

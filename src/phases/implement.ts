@@ -1,4 +1,4 @@
-// Last edited: 2026-09-21 00:20 CDT
+// Last edited: 2026-10-18 13:17 PDT
 // The implement + review phase: launch `/marshall:implement`, wait for its Stop, and read the
 // outcome from implement.json. This is where the spec's limits live: a stall (killed by the
 // pulse) resumes the session up to `maxResumes`, then one fresh restart from the plan commit;
@@ -17,7 +17,6 @@ import {
   bumpFreshRestarts,
   bumpResumes,
   claimRepos,
-  clearRepoPrs,
   setRepoPr,
   siblingDirArgs,
 } from "../scheduler/index.ts";
@@ -104,8 +103,9 @@ async function recover(agent: MasterAgent, run: Run, why: string): Promise<Run |
     identifier: agent.identifier,
     planPath: claim.planPath as string,
   });
+  // Only the primary repo is reset; sibling worktrees keep their commits and open PRs, and the
+  // resume status still lists them, so their PR URLs stay on the claim for the merge poll.
   agent.patch({ prUrl: null });
-  clearRepoPrs(deps.db, claim.issueId);
   agent.claim = bumpFreshRestarts(deps.db, claim.issueId, agent.now().toISOString());
   agent.emit("fresh_restart", { phase: IMPLEMENTING, why, resetTo: target });
   return launchFresh(agent);

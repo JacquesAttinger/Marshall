@@ -1,4 +1,4 @@
-// Last edited: 2026-10-18 16:15 PDT
+// Last edited: 2026-10-18 13:17 PDT
 // Which repos an issue touches. A plan's `## Repos touched` section names them; an issue with no
 // plan, or a plan with no such section, uses the default repo (the first in the config). Pure: it
 // reads the config and the issue text, and never touches disk or Linear.
@@ -29,14 +29,22 @@ export function defaultRepo(config: Config): RepoConfig {
 
 /**
  * The repos for an issue, primary first. An issue that carries its plan in its body and lists
- * repos gets exactly those (unknown slug: an error naming the known ones). Anything else gets the
- * default repo alone, which is the single-repo behavior every existing project has.
+ * repos gets exactly those (unknown slug: an error naming the known ones). A plan in a project
+ * with several repos must list them. Anything else gets the default repo alone, which is the
+ * single-repo behavior every existing project has.
  */
 export function resolveRepos(
   config: Config,
   issue: Pick<PickableIssue, "labels" | "description">,
 ): RepoResolution {
   const listed = isHasPlan(issue.labels) ? parseReposTouched(issue.description ?? "") : [];
+  if (listed.length === 0 && isHasPlan(issue.labels) && config.repos.length > 1) {
+    // A misspelled heading would otherwise drop every sibling repo without a word.
+    return {
+      ok: false,
+      error: `the plan has no "Repos touched" section, and this project has ${config.repos.length} repos`,
+    };
+  }
   if (listed.length === 0) {
     const repos = [{ repo: defaultRepo(config), role: "primary" as const, order: 1 }];
     return { ok: true, explicit: false, repos };

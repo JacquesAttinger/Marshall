@@ -1,4 +1,4 @@
-// Last edited: 2026-10-18 17:00 PDT
+// Last edited: 2026-10-18 13:17 PDT
 // The contract between `/marshall:implement` and the orchestrator: one JSON file per issue at
 // `<MARSHALL_HOME>/issues/<ISSUE-ID>/implement.json`, rewritten by the skill at each transition.
 // Steps 06, 07, 08 import the schema from here; the skill's SKILL.md quotes the same shape.

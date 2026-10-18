@@ -1,4 +1,4 @@
-// Last edited: 2026-09-29 19:25 CDT
+// Last edited: 2026-10-18 13:17 PDT
 // A fake `fetch` that plays Linear. Routes by GraphQL operationName, records every call,
 // and sets the rate-limit headers on each response. Handlers return data, `graphqlErrors(...)`,
 // or `httpStatus(...)`.

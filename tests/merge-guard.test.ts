@@ -1,8 +1,8 @@
-// Last edited: 2026-10-18 20:30 PDT
+// Last edited: 2026-10-18 13:17 PDT
 // The merge guard: what it denies, what it must leave alone, and the hook wiring around it.
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import {
   denyDecision,
@@ -16,6 +16,16 @@ import { type TempHome, useTempHome } from "./helpers.ts";
 
 const denied = (command: string, env: Record<string, string> = {}) =>
   forbiddenReason(command, env) !== null;
+
+let home: TempHome;
+
+beforeEach(() => {
+  home = useTempHome();
+});
+
+afterEach(() => {
+  home.restore();
+});
 
 describe("forbiddenReason: merges and approvals", () => {
   test.each([
@@ -32,6 +42,18 @@ describe("forbiddenReason: merges and approvals", () => {
     "gh api -X PUT repos/o/r/pulls/12/merge -f merge_method=squash",
     "gh api graphql -f query='mutation { mergePullRequest(input: {}) { clientMutationId } }'",
     "gh api graphql -f query='mutation { enablePullRequestAutoMerge(input: {}) { clientMutationId } }'",
+    // Ways round a plain-text match.
+    "gh pr 'merge' 5",
+    'gh "pr" merge 5',
+    "gh pr mer\\ge 5",
+    "G=gh; $G pr merge 5",
+    "env GH_TOKEN=x gh pr merge 5",
+    "sudo -n gh pr merge 5",
+    'bash -c "gh pr merge 5"',
+    "sh -c 'cd x && gh pr merge 5'",
+    "eval gh pr merge 5",
+    "gh api repos/o/r/pulls/5/reviews -f event=APPROVE",
+    "gh api repos/o/r/pulls/5/merge -X PUT",
   ])("denies %p", (command) => {
     expect(denied(command)).toBe(true);
   });
@@ -47,12 +69,23 @@ describe("forbiddenReason: merges and approvals", () => {
     "gh api repos/o/r --jq .default_branch",
     "git merge-base origin/staging HEAD",
     "git merge origin/staging",
+    // Prose that mentions a forbidden command is text, not a command.
     "echo gh pr merge is forbidden",
+    'gh pr create --title "AND-1: x" --body "never run gh pr merge or git push origin main"',
+    'git commit -m "never git push origin main"',
+    "gh api repos/o/r/issues/5/comments -f body='please merge this'",
+    "gh pr view 12 --repo hemut/Command --json state",
   ])("allows %p", (command) => {
-    // The last one mentions the words but is not a gh call; the guard may not be that smart,
-    // so only the real commands above must pass. Prose in an echo is allowed to trip it.
-    if (command.startsWith("echo")) return;
     expect(denied(command)).toBe(false);
+  });
+
+  test("a request body in a file is read, so a merge cannot hide in --input", () => {
+    const file = join(home.dir, "body.json");
+    writeFileSync(file, '{"merge_method":"squash"}');
+    expect(denied(`gh api repos/o/r/pulls/5/merge --input ${file}`)).toBe(true);
+    expect(denied(`gh api repos/o/r/issues --input ${file}`)).toBe(true);
+    writeFileSync(file, '{"body":"hello"}');
+    expect(denied(`gh api repos/o/r/issues/5/comments --input ${file}`)).toBe(false);
   });
 });
 
@@ -124,14 +157,6 @@ describe("judge", () => {
 });
 
 describe("the script as a hook", () => {
-  let home: TempHome;
-  beforeEach(() => {
-    home = useTempHome();
-  });
-  afterEach(() => {
-    home.restore();
-  });
-
   async function run(command: string, eventsFile: string) {
     const proc = Bun.spawn(["bun", MERGE_GUARD_PATH, eventsFile], {
       stdin: new Blob([
@@ -177,6 +202,33 @@ describe("the script as a hook", () => {
   });
 });
 
+describe("failing closed", () => {
+  test("the hook command blocks (exit 2) when the guard cannot run at all", () => {
+    const settings = JSON.parse(buildAgentSettings("run-9")) as {
+      hooks: { PreToolUse: { hooks: { command: string }[] }[] };
+    };
+    const command = settings.hooks.PreToolUse[0]?.hooks[0]?.command as string;
+    expect(command).toEndWith("|| exit 2");
+    // No `bun` on PATH: the shell fails to start it, and the `|| exit 2` turns that into a block.
+    const run = Bun.spawnSync(["/bin/sh", "-c", command], {
+      env: { PATH: "/nonexistent" },
+      stdin: new Blob(["{}"]),
+    });
+    expect(run.exitCode).toBe(2);
+  });
+
+  test("a command the guard cannot judge is denied, not allowed", async () => {
+    const proc = Bun.spawn(["bun", MERGE_GUARD_PATH, "/proc/nonexistent/events.jsonl"], {
+      stdin: new Blob([
+        JSON.stringify({ tool_name: "Bash", tool_input: { command: "gh pr merge 1" } }),
+      ]),
+      stdout: "pipe",
+    });
+    const out = await new Response(proc.stdout).text();
+    expect(JSON.parse(out).hookSpecificOutput.permissionDecision).toBe("deny");
+  });
+});
+
 describe("wiring in the agent settings", () => {
   test("every run gets the PreToolUse Bash hook that points at the guard and its events file", () => {
     const settings = JSON.parse(buildAgentSettings("run-9")) as {
@@ -191,6 +243,8 @@ describe("wiring in the agent settings", () => {
   test("the committed settings deny gh pr merge as a second lock", () => {
     const base = loadBaseSettings() as { permissions?: { deny?: string[] } };
     expect(base.permissions?.deny).toContain("Bash(gh pr merge:*)");
+    expect(base.permissions?.deny).toContain("Bash(git push origin staging:*)");
+    expect(base.permissions?.deny).toContain("Bash(gh pr review --approve:*)");
     expect(resolve(MERGE_GUARD_PATH)).toBe(MERGE_GUARD_PATH);
   });
 });

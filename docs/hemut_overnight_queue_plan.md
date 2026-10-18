@@ -1,4 +1,4 @@
-<!-- Last edited: 2026-10-18 21:20 PDT -->
+<!-- Last edited: 2026-10-18 13:17 PDT -->
 
 # Plan: Overnight plan queue for the Hemut repos
 
@@ -266,10 +266,26 @@ These points differ from the text above:
 - **Siblings are not auto-rebased.**
   The rebase pulse still works on the primary PR.
   Merge detection reads every PR of the claim: the issue is Done only when all of them merged, and a PR closed without a merge releases the claim.
+- **Intake uses its own, looser plan check.**
+  `runPlanIntake` calls `checkIntakePlan` (`TLDR`, `Plan`, `Verification`, plus `Repos touched` when the project has several repos), not `checkPlanFile`.
+  The planner's nine-section template would reject most plans a person writes.
+- **The agent runs in the primary worktree, not a parent folder.**
+  Each sibling worktree is added with `--add-dir`, and `MARSHALL_REPOS_JSON` lists them all.
+- **Rebases are per repo.**
+  A merged PR queues only the waiting PRs of its own repo.
+  A merged multi-repo claim queues each repo it merged into.
+  A parked claim whose primary already merged is never rebased.
+- **A multi-repo project needs `## Repos touched`.**
+  `enqueue` and the scheduler both refuse a has-plan issue that lacks it, so a misspelled heading cannot silently drop the sibling repos.
+- **The done sweep checks every repo.**
+  An issue is Done only when each repo of its claim has a merged PR and no PR is open.
 - **Config key.**
   The skill choice is `implementSkill` (`"implement"` or `"implement-hemut"`), not `skills.implement`.
 - **Guard hook.**
-  `scripts/merge-guard.ts` also denies `gh pr review --approve`.
+  `scripts/merge-guard.ts` reads the command as shell words, so a quoted body such as `--body "never run gh pr merge"` is allowed, and `gh pr 'merge'`, `bash -c "..."`, `eval`, and `env X=1 gh ...` are caught.
+  It fails closed: the hook command ends in `|| exit 2`, and a command the guard cannot judge is denied.
+  It also denies `gh pr review --approve` and an approving or merging `gh api` call (a request body in an `--input` file is read).
+  It blocks pushes to `staging`, `main`, `master`, and the run's base branches in every project, not only Hemut's.
   A live agent run confirmed that the hook blocks `gh pr merge` under `bypassPermissions`.
   The `permissions.deny` rules in `agent-settings.json` were not tested on their own.
 - **Repos in the Hemut config.**

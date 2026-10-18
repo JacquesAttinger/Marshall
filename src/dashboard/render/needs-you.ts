@@ -1,4 +1,4 @@
-// Last edited: 2026-10-03 18:34 CDT
+// Last edited: 2026-10-18 13:17 PDT
 // The "needs you" cards: issues waiting on a person. A Needs Verification card shows the
 // hand-off's TLDR and opens the full package on demand; a Blocked card shows why.
 

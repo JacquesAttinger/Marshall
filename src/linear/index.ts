@@ -1,4 +1,4 @@
-// Last edited: 2026-10-18 14:20 PDT
+// Last edited: 2026-10-18 13:17 PDT
 // Public surface of the Linear module. Steps 06, 07, and 08 import from here.
 
 export {
@@ -35,6 +35,7 @@ export {
   isFromMarshall,
   isHasPlan,
   isHumanOnly,
+  isOptedIn,
   MARSHALL_COMMENT_FOOTER,
   MARSHALL_LABEL_GROUP,
   NEEDS_VERIFICATION_STATE,

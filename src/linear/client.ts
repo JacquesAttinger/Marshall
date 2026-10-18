@@ -1,4 +1,4 @@
-// Last edited: 2026-10-18 14:20 PDT
+// Last edited: 2026-10-18 13:17 PDT
 // The one module that talks to Linear. Every read or write Marshall makes goes through LinearClient.
 // Claim lock = state In Progress + one `marshall/agent-<slot>` label. `delegate` waits for the
 // iteration 2 OAuth agent, because the API only accepts agent users there.

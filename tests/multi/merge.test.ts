@@ -1,4 +1,4 @@
-// Last edited: 2026-10-18 18:00 PDT
+// Last edited: 2026-10-18 13:17 PDT
 // When a multi-repo claim counts as merged or closed, and what the done sweep searches.
 
 import { afterEach, describe, expect, test } from "bun:test";

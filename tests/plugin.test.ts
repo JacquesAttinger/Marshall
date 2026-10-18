@@ -1,4 +1,4 @@
-// Last edited: 2026-09-22 12:44 CDT
+// Last edited: 2026-10-18 13:17 PDT
 // The plugin is what the agents load with --plugin-dir; a broken manifest or a skill without
 // frontmatter fails silently inside an agent, so these checks run here instead.
 

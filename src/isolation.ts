@@ -1,4 +1,4 @@
-// Last edited: 2026-10-18 16:50 PDT
+// Last edited: 2026-10-18 13:17 PDT
 // Per-slot isolation for agents that share one laptop: each slot gets its own Compose project
 // name and its own host ports, handed to the agent through the settings `env` key (see
 // docs/isolation.md). Nothing here runs Docker; the skill does, with these vars in its env.

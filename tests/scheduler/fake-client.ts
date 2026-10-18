@@ -88,6 +88,13 @@ function detailOf(entry: FakeIssue): IssueDetail {
   };
 }
 
+/** A method the scheduler never calls: it throws if a test reaches it by mistake. */
+function unsupported(name: string): () => Promise<never> {
+  return async () => {
+    throw new Error(`fake linear: ${name} is not part of the scheduler`);
+  };
+}
+
 export function fakeClient(issues: PickableIssue[] = []): FakeLinearClient {
   const map = new Map<string, FakeIssue>();
   for (const issue of issues) {
@@ -151,12 +158,9 @@ export function fakeClient(issues: PickableIssue[] = []): FakeLinearClient {
       comments.push({ issueId, body: markdown });
       return { id: `comment-${comments.length}` };
     },
-    async updateComment() {
-      throw new Error("fake linear: updateComment is not part of the scheduler");
-    },
-    async createFollowUp() {
-      throw new Error("fake linear: createFollowUp is not part of the scheduler");
-    },
+    updateComment: unsupported("updateComment"),
+    createQueuedPlan: unsupported("createQueuedPlan"),
+    createFollowUp: unsupported("createFollowUp"),
     async getIssue(issueId) {
       return detailOf(get(issueId));
     },

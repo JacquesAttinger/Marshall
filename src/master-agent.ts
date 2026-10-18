@@ -1,4 +1,4 @@
-// Last edited: 2026-09-21 00:20 CDT
+// Last edited: 2026-10-18 14:30 PDT
 // Public surface of the master agent (step 08). `createMasterAgentHooks` is what `startLoop`
 // takes in place of `defaultHooks`; `defaultMasterDeps` wires the real runner, git, gh, and the
 // step 04 / 06 phases. Tests build a MasterDeps with fakes instead.
@@ -12,7 +12,7 @@ import type { Logger } from "./log.ts";
 import { gitOps } from "./master/git.ts";
 import { createOrchestrator, type Orchestrator } from "./master/orchestrator.ts";
 import type { MasterDeps } from "./master/types.ts";
-import { createRunWaiter, runPlanPhase } from "./plan/index.ts";
+import { createRunWaiter, runPlanIntake, runPlanPhase } from "./plan/index.ts";
 import type { RunWaiter } from "./plan/types.ts";
 import { isStalled, kill, launch, resume } from "./runner/index.ts";
 
@@ -66,7 +66,7 @@ export function defaultMasterDeps(input: DefaultDepsInput): MasterDeps {
     runner: { launch, resume, kill, isStalled },
     git: gitOps,
     gh: runGh,
-    phases: { plan: runPlanPhase, handoff: runHandoffPhase, postHandoff },
+    phases: { plan: runPlanPhase, intake: runPlanIntake, handoff: runHandoffPhase, postHandoff },
   };
 }
 

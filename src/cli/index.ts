@@ -1,10 +1,11 @@
-// Last edited: 2026-10-11 20:30 PDT
+// Last edited: 2026-10-18 15:10 PDT
 // Hand-rolled dispatch. No CLI dependency. `bin/marshall` imports this file.
 
 import { applyActiveProject } from "../projects.ts";
 import { runStart, runStop } from "./daemon.ts";
 import { runDashboard } from "./dashboard.ts";
 import { runMigrate } from "./db.ts";
+import { runEnqueue } from "./enqueue.ts";
 import { runHandoffCheck } from "./handoff.ts";
 import { runKill } from "./kill.ts";
 import { runLinearSetup } from "./linear.ts";
@@ -29,6 +30,9 @@ Commands:
   db migrate          Create the state dir and apply pending migrations
   linear setup [--json]
                       Create the Needs Verification and Blocked states and the marshall labels
+  enqueue <plan-file> [--dry-run] [--json]
+                      Queue a finished plan: file a Todo issue with the plan as its body and the
+                      marshall:queued label. Marshall skips planning and implements it.
   plan <identifier> --cwd <worktree> [--revise] [--json]
                       Run the planning phase on one issue in an existing worktree
   plan check <file> [--json]
@@ -55,6 +59,7 @@ Options:
   --key-from-env      Copy MARSHALL_LINEAR_API_KEY from the environment (project import only)
   --revise            Revise an existing plan after a bounce (plan only)
   --once              One pass, then exit (run only)
+  --dry-run           Check the plan and write nothing (enqueue only)
   -h, --help          Show this help`;
 
 interface Parsed {
@@ -63,6 +68,7 @@ interface Parsed {
   help: boolean;
   revise: boolean;
   once: boolean;
+  dryRun: boolean;
   keyFromEnv: boolean;
   configPath?: string;
   cwd?: string;
@@ -85,6 +91,7 @@ export function parseArgs(argv: string[]): Parsed {
     help: false,
     revise: false,
     once: false,
+    dryRun: false,
     keyFromEnv: false,
   };
   for (let i = 0; i < argv.length; i++) {
@@ -100,6 +107,7 @@ export function parseArgs(argv: string[]): Parsed {
     } else if (a === "--json") out.json = true;
     else if (a === "--revise") out.revise = true;
     else if (a === "--once") out.once = true;
+    else if (a === "--dry-run") out.dryRun = true;
     else if (a === "--key-from-env") out.keyFromEnv = true;
     else if (a === "-h" || a === "--help") out.help = true;
     else if (a.startsWith("-")) throw new Error(`Unknown option: ${a}`);
@@ -144,6 +152,16 @@ const COMMANDS: Record<string, Command> = {
     arity: 0,
     run: async (args) =>
       void (await runLinearSetup({ json: args.json, configPath: args.configPath })),
+  },
+  enqueue: {
+    arity: 1,
+    run: (args, [file]) =>
+      runEnqueue({
+        file: file as string,
+        dryRun: args.dryRun,
+        json: args.json,
+        configPath: args.configPath,
+      }),
   },
   "plan check": { arity: 1, run: (args, [file]) => runPlanCheck(file as string, args.json) },
   "handoff check": {

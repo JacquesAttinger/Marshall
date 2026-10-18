@@ -36,6 +36,47 @@ async function startThroughPlanning(identifier = "CB-1") {
   return { issue, claim, implementRun: h.runner.launches[0]?.runId as string };
 }
 
+describe("plan intake", () => {
+  test("an issue with the has-plan label skips the planner, commits its plan, and goes to implement", async () => {
+    h = makeMasterHarness();
+    const issue = registerIssue(h, "CB-1");
+    const entry = h.linear.issues.get(issue.id);
+    if (!entry) throw new Error("issue not registered");
+    entry.labels.push("marshall:has-plan");
+    entry.issue.description =
+      "# Plan\n\n## TLDR\n\nDo it.\n\n## Plan\n\nx\n\n## Verification\n\ny\n";
+    await h.hooks.start(claimFor(h, issue), issue);
+    await until(() => h.runner.launches.length >= 1, 2000, "implement launch");
+
+    expect(h.phases.planCalls).toHaveLength(0);
+    expect(h.phases.intakeCalls).toHaveLength(1);
+    expect(h.phases.intakeCalls[0]).toMatchObject({ cwd: `${h.home.dir}/wt-CB-1` });
+    // The branch was put back at the base first, so the plan is the branch's first commit.
+    expect(h.git.calls.find((c) => c.op === "resetHard")?.args[1]).toBe("origin/main");
+    expect(getClaim(h.db, issue.id)).toMatchObject({ state: "implementing", planPath: PLAN });
+    expect(h.runner.launches[0]?.opts.prompt).toBe(`/marshall:implement ${PLAN} CB-1`);
+    expect(h.linear.comments[0]?.body).toContain("skipped planning");
+    expect(masterEvents(h.db)).toContain("plan_intake");
+  });
+
+  test("a plan that fails the check blocks the issue and never launches an agent", async () => {
+    h = makeMasterHarness();
+    const issue = registerIssue(h, "CB-1");
+    h.linear.issues.get(issue.id)?.labels.push("marshall:has-plan");
+    h.phases.intakeResults.push({
+      ok: false,
+      reason: "invalid_plan",
+      detail: "missing sections: Plan",
+    });
+    await h.hooks.start(claimFor(h, issue), issue);
+    await until(() => h.linear.stateOf(issue.id) === "Blocked", 2000, "blocked");
+
+    expect(h.runner.launches).toHaveLength(0);
+    expect(h.linear.comments.at(-1)?.body).toContain("missing sections: Plan");
+    expect(getClaim(h.db, issue.id)?.state).toBe("blocked");
+  });
+});
+
 describe("happy path", () => {
   test("plan → implement → hand-off → Needs Verification, finished, slot freed", async () => {
     h = makeMasterHarness({ config: { fileFollowUps: true } });

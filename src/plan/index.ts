@@ -1,4 +1,4 @@
-// Last edited: 2026-09-20 10:56 CDT
+// Last edited: 2026-10-18 14:30 PDT
 // Public API of the planning phase. Step 08 imports from here and nowhere else in src/plan.
 
 export { briefPath, priorityWord, renderBrief, writeBrief } from "./brief.ts";
@@ -10,6 +10,19 @@ export {
   modelFor,
   parseClassifierOutput,
 } from "./classify.ts";
+export {
+  checkIntakePlan,
+  INTAKE_SECTIONS,
+  type IntakeCheck,
+  type IntakeInput,
+  type IntakeResult,
+  intakePlanPath,
+  parseReposTouched,
+  planSourceOf,
+  type RepoRef,
+  type RepoRole,
+  runPlanIntake,
+} from "./intake.ts";
 export { PLUGIN_DIR, runPlanPhase } from "./phase.ts";
 export { renderSummary } from "./summary.ts";
 export {

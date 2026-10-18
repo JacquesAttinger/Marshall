@@ -1,4 +1,4 @@
-// Last edited: 2026-10-18 13:20 PDT
+// Last edited: 2026-10-18 14:20 PDT
 // Pure mappers from Linear's raw issue shape to Marshall's types. No fetch, so tests hit them directly.
 
 import type { RawIssue, RawIssueDetail } from "./queries.ts";
@@ -93,6 +93,11 @@ export function agentLabelOf(labels: RawLabel[]): AgentId | null {
 
 export function isHumanOnly(labels: string[]): boolean {
   return labels.includes(HUMAN_ONLY_LABEL);
+}
+
+/** The issue carries a finished plan in its body, so the planner is skipped. */
+export function isHasPlan(labels: string[]): boolean {
+  return labels.includes(HAS_PLAN_LABEL);
 }
 
 export function isFromMarshall(body: string): boolean {

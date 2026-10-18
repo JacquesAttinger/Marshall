@@ -152,6 +152,17 @@ function defaultHandlers(): Record<string, Handler> {
         },
       },
     }),
+    CreatePlanIssue: () => ({
+      issueCreate: {
+        success: true,
+        issue: {
+          id: "issue-plan",
+          identifier: "CB-100",
+          url: "https://linear.app/chessbuddy/issue/CB-100",
+          branchName: "me/cb-100-add-a-thing",
+        },
+      },
+    }),
     CreateRelation: () => ({ issueRelationCreate: { success: true } }),
     CreateState: () => ({
       workflowStateCreate: { success: true, workflowState: { id: "state-new" } },

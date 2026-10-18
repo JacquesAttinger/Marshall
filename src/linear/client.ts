@@ -1,4 +1,4 @@
-// Last edited: 2026-10-18 13:20 PDT
+// Last edited: 2026-10-18 14:20 PDT
 // The one module that talks to Linear. Every read or write Marshall makes goes through LinearClient.
 // Claim lock = state In Progress + one `marshall/agent-<slot>` label. `delegate` waits for the
 // iteration 2 OAuth agent, because the API only accepts agent users there.
@@ -15,6 +15,7 @@ import {
   agentLabelsOf,
   BLOCKED_STATE,
   DONE_STATE,
+  HAS_PLAN_LABEL,
   HUMAN_ONLY_LABEL,
   IN_PROGRESS_STATE,
   type IssueDetail,
@@ -22,6 +23,7 @@ import {
   MARSHALL_COMMENT_FOOTER,
   NEEDS_VERIFICATION_STATE,
   type PickableIssue,
+  QUEUED_LABEL,
   TODO_STATE,
   toDetail,
   toPickable,
@@ -29,6 +31,7 @@ import {
 import {
   CreateComment,
   CreateIssue,
+  CreatePlanIssue,
   CreateRelation,
   IssueById,
   type Operation,
@@ -50,6 +53,17 @@ export interface ViewerInfo {
 export interface FollowUpInput {
   title: string;
   description: string;
+}
+
+/** A plan to queue: the issue body is the plan text. */
+export interface PlanIssueInput {
+  title: string;
+  description: string;
+}
+
+export interface CreatedPlanIssue extends CreatedIssue {
+  /** Linear's `gitBranchName`: Hemut PRs must use it so the GitHub link and status sync work. */
+  branchName: string;
 }
 
 export interface CreatedIssue {
@@ -79,6 +93,11 @@ export interface LinearClient {
   /** Replace a comment's body (footer appended again). Fails if the comment was deleted. */
   updateComment(commentId: string, markdown: string): Promise<void>;
   createFollowUp(originIssueId: string, input: FollowUpInput): Promise<CreatedIssue>;
+  /**
+   * File a Todo issue assigned to this user with the plan as its body and the `marshall:queued` and
+   * `marshall:has-plan` labels, so the next tick picks it up and skips the planner.
+   */
+  createQueuedPlan(input: PlanIssueInput): Promise<CreatedPlanIssue>;
   getIssue(issueId: string): Promise<IssueDetail>;
 }
 
@@ -260,6 +279,28 @@ async function createFollowUp(
   return created;
 }
 
+async function createQueuedPlan(ctx: Ctx, input: PlanIssueInput): Promise<CreatedPlanIssue> {
+  const labelIds = [QUEUED_LABEL, HAS_PLAN_LABEL].map((name) => ctx.labelId(name));
+  if (labelIds.some((id) => !id)) {
+    throw new LinearError(
+      `Linear team is missing label "${QUEUED_LABEL}" or "${HAS_PLAN_LABEL}". Run \`marshall linear setup\`.`,
+      CreatePlanIssue.name,
+    );
+  }
+  const { issueCreate } = await run(ctx.gql, CreatePlanIssue, {
+    input: {
+      teamId: ctx.teamId,
+      title: input.title,
+      description: input.description,
+      assigneeId: ctx.viewer.userId,
+      stateId: ctx.stateId(TODO_STATE),
+      labelIds,
+    },
+  });
+  ctx.log.info("linear.plan_queued", { identifier: issueCreate.issue.identifier });
+  return issueCreate.issue;
+}
+
 function buildClient(ctx: Ctx): LinearClient {
   return {
     whoami: () => ctx.viewer,
@@ -291,6 +332,7 @@ function buildClient(ctx: Ctx): LinearClient {
     comment: (issueId, markdown) => comment(ctx, issueId, markdown),
     updateComment: (commentId, markdown) => updateComment(ctx, commentId, markdown),
     createFollowUp: (originId, input) => createFollowUp(ctx, originId, input),
+    createQueuedPlan: (input) => createQueuedPlan(ctx, input),
     getIssue: async (issueId) => toDetail((await run(ctx.gql, IssueById, { id: issueId })).issue),
   };
 }

@@ -1,4 +1,4 @@
-// Last edited: 2026-10-18 13:20 PDT
+// Last edited: 2026-10-18 14:20 PDT
 // One GraphQL document plus its Zod response schema per Linear operation Marshall uses.
 // Field names follow Linear's public schema. Keep documents minimal: every field costs complexity.
 
@@ -244,6 +244,29 @@ export const CreateIssue: Operation<{
   schema: z.object({
     issueCreate: SuccessSchema.extend({
       issue: z.object({ id: z.string(), identifier: z.string(), url: z.string() }),
+    }),
+  }),
+};
+
+/** `CreateIssue` plus the `branchName` Hemut policy needs: the branch the PR must use. */
+export const CreatePlanIssue: Operation<{
+  issueCreate: {
+    success: boolean;
+    issue: { id: string; identifier: string; url: string; branchName: string };
+  };
+}> = {
+  name: "CreatePlanIssue",
+  doc: `mutation CreatePlanIssue($input: IssueCreateInput!) {
+  issueCreate(input: $input) { success issue { id identifier url branchName } }
+}`,
+  schema: z.object({
+    issueCreate: SuccessSchema.extend({
+      issue: z.object({
+        id: z.string(),
+        identifier: z.string(),
+        url: z.string(),
+        branchName: z.string(),
+      }),
     }),
   }),
 };

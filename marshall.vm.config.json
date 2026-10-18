@@ -1,4 +1,4 @@
-// Last edited: 2026-10-11 19:10 PDT
+// Last edited: 2026-10-18 13:13 PDT
 // Marshall's settings for the Oracle VM (docs/oracle_hosting_plan.md). The VM runs this file, the Mac runs
 // marshall.config.json: set MARSHALL_CONFIG to this path in the systemd unit. Comments are allowed (JSONC);
 // secrets go in .env, not in this file.
@@ -20,9 +20,9 @@
   // Issues worked on at the same time. One slot, one worktree, one Compose stack each. Max 3.
   "maxAgents": 3,
   // New issue starts allowed per calendar day.
-  "dailyStartCap": 10,
+  "dailyStartCap": 25,
   // New issue starts allowed inside any rolling window of `windowHours` hours.
-  "windowStartCap": 10,
+  "windowStartCap": 25,
   // Length of that rolling window, in hours.
   "windowHours": 3,
   // How often the daemon polls Linear and checks on its agents, in seconds.

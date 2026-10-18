@@ -1,4 +1,4 @@
-// Last edited: 2026-10-03 18:34 CDT
+// Last edited: 2026-10-18 13:17 PDT
 // The "needs you" cards: issues waiting on a person. A Needs Verification card shows the
 // hand-off's TLDR and opens the full package on demand; a Blocked card shows why.
 
@@ -33,6 +33,10 @@ function card(c: NeedsYouCard, now: Date): SafeHtml {
   const links = [
     c.prUrl &&
       html`<a href="${c.prUrl}" target="_blank" rel="noopener noreferrer">${prLabel(c.prUrl)}</a>`,
+    ...c.otherPrs.map(
+      (pr) =>
+        html`<a href="${pr.url}" target="_blank" rel="noopener noreferrer">${pr.repo} ${prLabel(pr.url)}</a>`,
+    ),
     html`<a href="${c.url}" target="_blank" rel="noopener noreferrer">Linear</a>`,
   ].filter(Boolean) as SafeHtml[];
   return html`<article class="card card-${c.state}" data-id="${c.identifier}">

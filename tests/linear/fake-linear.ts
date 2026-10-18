@@ -1,4 +1,4 @@
-// Last edited: 2026-09-29 19:25 CDT
+// Last edited: 2026-10-18 13:17 PDT
 // A fake `fetch` that plays Linear. Routes by GraphQL operationName, records every call,
 // and sets the rate-limit headers on each response. Handlers return data, `graphqlErrors(...)`,
 // or `httpStatus(...)`.
@@ -34,6 +34,8 @@ export const IDS = {
   done: "state-done",
   agentFiled: "label-agent-filed",
   humanOnly: "label-human-only",
+  queued: "label-queued",
+  hasPlan: "label-has-plan",
   marshall: "label-marshall",
   agent0: "label-agent-0",
   agent1: "label-agent-1",
@@ -71,6 +73,8 @@ export const fullTeamData = (): { team: TeamMeta } => ({
       nodes: [
         { id: IDS.agentFiled, name: "agent-filed", isGroup: false, parent: null },
         { id: IDS.humanOnly, name: "human-only", isGroup: false, parent: null },
+        { id: IDS.queued, name: "marshall:queued", isGroup: false, parent: null },
+        { id: IDS.hasPlan, name: "marshall:has-plan", isGroup: false, parent: null },
         { id: IDS.marshall, name: "marshall", isGroup: true, parent: null },
         {
           id: IDS.agent0,
@@ -145,6 +149,17 @@ function defaultHandlers(): Record<string, Handler> {
           id: "issue-new",
           identifier: "CB-99",
           url: "https://linear.app/chessbuddy/issue/CB-99",
+        },
+      },
+    }),
+    CreatePlanIssue: () => ({
+      issueCreate: {
+        success: true,
+        issue: {
+          id: "issue-plan",
+          identifier: "CB-100",
+          url: "https://linear.app/chessbuddy/issue/CB-100",
+          branchName: "me/cb-100-add-a-thing",
         },
       },
     }),

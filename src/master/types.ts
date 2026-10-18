@@ -1,4 +1,4 @@
-// Last edited: 2026-09-29 19:05 CDT
+// Last edited: 2026-10-18 13:17 PDT
 // Shapes for the master agent: the phase states it writes to `claims.state`, the events it
 // records, and the injectable seams (runner, git, gh, phases) so the state machine is tested
 // with fakes and a fake clock, never with a live agent.
@@ -14,7 +14,13 @@ import type {
 } from "../handoff/index.ts";
 import type { LinearClient } from "../linear/index.ts";
 import type { Logger } from "../log.ts";
-import type { PlanPhaseInput, PlanPhaseResult, RunWaiter } from "../plan/index.ts";
+import type {
+  IntakeInput,
+  IntakeResult,
+  PlanPhaseInput,
+  PlanPhaseResult,
+  RunWaiter,
+} from "../plan/index.ts";
 import type { LaunchOpts, ResumeOpts, Run } from "../runner/index.ts";
 
 /** Phase states, in lifecycle order. The parked and terminal ones live in scheduler/types.ts. */
@@ -27,6 +33,7 @@ export const RESOLVING = "resolving";
 /** Every event the master agent writes, as `master.<name>`. Step 09 maps six of them to pushes. */
 export const MASTER_EVENTS = [
   "phase_changed",
+  "plan_intake",
   "finished",
   "blocked",
   "over_budget",
@@ -86,9 +93,11 @@ export interface GitOps {
   forcePush(cwd: string): Promise<void>;
 }
 
-/** The three phase calls from steps 04 and 06, injectable so the driver is tested with stubs. */
+/** The phase calls from steps 04 and 06, injectable so the driver is tested with stubs. */
 export interface PhaseRunners {
   plan(input: PlanPhaseInput): Promise<PlanPhaseResult>;
+  /** An issue that carries a finished plan: write and commit it instead of running the planner. */
+  intake(input: IntakeInput): Promise<IntakeResult>;
   handoff(input: HandoffPhaseInput): Promise<HandoffPhaseResult>;
   postHandoff(input: PostInput): Promise<PostResult>;
 }

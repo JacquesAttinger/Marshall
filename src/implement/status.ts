@@ -1,4 +1,4 @@
-// Last edited: 2026-09-20 10:45 CDT
+// Last edited: 2026-10-18 13:17 PDT
 // The contract between `/marshall:implement` and the orchestrator: one JSON file per issue at
 // `<MARSHALL_HOME>/issues/<ISSUE-ID>/implement.json`, rewritten by the skill at each transition.
 // Steps 06, 07, 08 import the schema from here; the skill's SKILL.md quotes the same shape.
@@ -24,6 +24,11 @@ export const IMPLEMENT_OUTCOMES = ["pr_green", "review_exhausted", "tests_red", 
 
 export const FollowupSchema = z.object({ title: z.string().min(1), body: z.string() }).strict();
 
+/** One PR per repo of a multi-repo claim. `repo` is the slug from the plan's `Repos touched`. */
+export const RepoPrSchema = z
+  .object({ repo: z.string().min(1), url: z.string().url(), draft: z.boolean() })
+  .strict();
+
 export const ImplementStatusSchema = z
   .object({
     issueId: z.string().min(1),
@@ -35,6 +40,8 @@ export const ImplementStatusSchema = z
     branch: z.string().min(1).nullable(),
     prUrl: z.string().url().nullable(),
     prDraft: z.boolean(),
+    /** Every repo's PR for a multi-repo claim, primary included. Absent for a single-repo run. */
+    prs: z.array(RepoPrSchema).optional(),
     ciState: z.enum(["pending", "green", "red"]).nullable(),
     /** Non-null once the run has ended, whatever `phase` says. */
     outcome: z.enum(IMPLEMENT_OUTCOMES).nullable(),

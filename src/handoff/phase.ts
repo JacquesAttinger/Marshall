@@ -1,4 +1,4 @@
-// Last edited: 2026-09-20 23:35 CDT
+// Last edited: 2026-10-18 13:17 PDT
 // The hand-off phase: read implement.json → snapshot the worktree → launch `/marshall:handoff` →
 // wait → prove the worktree did not change → validate the file → resume once with the problems
 // if it is invalid → post. Mirrors src/plan/phase.ts; step 08 makes one call, runHandoffPhase.
@@ -6,12 +6,14 @@
 import { type Config, handoffModel } from "../config.ts";
 import { GitError, gitLines, runGit } from "../git.ts";
 import { readImplementStatus } from "../implement/status.ts";
+import { reposEnv } from "../isolation.ts";
 import type { IssueDetail } from "../linear/index.ts";
 import { createLogger } from "../log.ts";
 import { handoffPath, issueDir } from "../paths.ts";
 import { PLUGIN_DIR } from "../plan/phase.ts";
 import { createRunWaiter } from "../plan/wait.ts";
 import { getRun, kill, launch, mintRunId, type Run, resume } from "../runner/index.ts";
+import { type ClaimRepo, claimRepos, siblingDirArgs } from "../scheduler/repos.ts";
 import { readHandoffMeta } from "./meta.ts";
 import { postHandoff } from "./post.ts";
 import type {
@@ -34,14 +36,15 @@ export function handoffEnv(
   prUrl: string,
   round: number,
   config: Config,
+  repos: readonly ClaimRepo[] = [],
 ): Record<string, string> {
   return {
     MARSHALL_ISSUE_DIR: issueDir(issue.identifier),
     MARSHALL_ISSUE_URL: issue.url,
     MARSHALL_HANDOFF_PATH: handoffPath(issue.identifier),
     MARSHALL_ROUND: String(round),
-    MARSHALL_BASE_BRANCH: config.baseBranch,
     MARSHALL_PR_URL: prUrl,
+    ...reposEnv(config, repos),
   };
 }
 
@@ -94,8 +97,8 @@ function launchOpts(ctx: Ctx, prompt: string) {
     cwd: ctx.cwd,
     model: ctx.model,
     prompt,
-    extraArgs: ["--plugin-dir", PLUGIN_DIR],
-    env: handoffEnv(ctx.issue, ctx.prUrl, ctx.round, ctx.config),
+    extraArgs: ["--plugin-dir", PLUGIN_DIR, ...siblingDirArgs(ctx.db, ctx.issue.id)],
+    env: handoffEnv(ctx.issue, ctx.prUrl, ctx.round, ctx.config, claimRepos(ctx.db, ctx.issue.id)),
   };
 }
 

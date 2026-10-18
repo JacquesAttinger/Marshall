@@ -1,4 +1,4 @@
-// Last edited: 2026-09-21 15:10 CDT
+// Last edited: 2026-10-18 13:17 PDT
 // Shapes shared by the scheduler, the caps, and step 08. A Claim is one row of the `claims` table.
 
 import type { Database } from "bun:sqlite";
@@ -109,6 +109,7 @@ export interface SchedulerDeps {
 export type SkipReason =
   | "paused"
   | "human_only"
+  | "not_queued"
   | "live_claim"
   | "blocked"
   | "caps"

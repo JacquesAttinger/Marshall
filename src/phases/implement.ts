@@ -1,4 +1,4 @@
-// Last edited: 2026-09-21 00:20 CDT
+// Last edited: 2026-10-18 13:17 PDT
 // The implement + review phase: launch `/marshall:implement`, wait for its Stop, and read the
 // outcome from implement.json. This is where the spec's limits live: a stall (killed by the
 // pulse) resumes the session up to `maxResumes`, then one fresh restart from the plan commit;
@@ -13,8 +13,14 @@ import { IMPLEMENTING, OVER_BUDGET, STALLED } from "../master/types.ts";
 import { PLUGIN_DIR } from "../plan/index.ts";
 import { terminalOf } from "../plan/wait.ts";
 import { getRun, type Run, type Terminal } from "../runner/index.ts";
-import { bumpFreshRestarts, bumpResumes } from "../scheduler/index.ts";
-import { IMPLEMENT_RESUME_PROMPT, implementPrompt, runName } from "./names.ts";
+import {
+  bumpFreshRestarts,
+  bumpResumes,
+  claimRepos,
+  setRepoPr,
+  siblingDirArgs,
+} from "../scheduler/index.ts";
+import { implementPrompt, implementResumePrompt, runName } from "./names.ts";
 import { prepareBounceStatus, readImplementOutcome } from "./status.ts";
 
 /** Outcomes the skill reports honestly; none of them gets a retry. */
@@ -30,8 +36,14 @@ function launchOpts(agent: MasterAgent) {
     name: runName(agent.identifier, "implement"),
     cwd: agent.cwd,
     effort: "high" as const,
-    extraArgs: ["--plugin-dir", PLUGIN_DIR],
-    env: implementEnv(agent.identifier, issue.url, claim.slot, deps.config),
+    extraArgs: ["--plugin-dir", PLUGIN_DIR, ...siblingDirArgs(deps.db, claim.issueId)],
+    env: implementEnv(
+      agent.identifier,
+      issue.url,
+      claim.slot,
+      deps.config,
+      claimRepos(deps.db, claim.issueId),
+    ),
     statusFile: implementStatusPath(agent.identifier),
   };
 }
@@ -41,7 +53,7 @@ async function launchFresh(agent: MasterAgent): Promise<Run> {
   return agent.deps.runner.launch(agent.deps.db, {
     ...launchOpts(agent),
     model: implementModel(agent.deps.config),
-    prompt: implementPrompt(planPath, agent.identifier),
+    prompt: implementPrompt(planPath, agent.identifier, agent.deps.config.implementSkill),
   });
 }
 
@@ -52,7 +64,7 @@ async function continueRun(agent: MasterAgent, run: Run): Promise<Run> {
   return agent.deps.runner.resume(agent.deps.db, {
     ...launchOpts(agent),
     sessionId,
-    prompt: IMPLEMENT_RESUME_PROMPT,
+    prompt: implementResumePrompt(agent.deps.config.implementSkill),
   });
 }
 
@@ -91,6 +103,8 @@ async function recover(agent: MasterAgent, run: Run, why: string): Promise<Run |
     identifier: agent.identifier,
     planPath: claim.planPath as string,
   });
+  // Only the primary repo is reset; sibling worktrees keep their commits and open PRs, and the
+  // resume status still lists them, so their PR URLs stay on the claim for the merge poll.
   agent.patch({ prUrl: null });
   agent.claim = bumpFreshRestarts(deps.db, claim.issueId, agent.now().toISOString());
   agent.emit("fresh_restart", { phase: IMPLEMENTING, why, resetTo: target });
@@ -103,6 +117,7 @@ async function finished(agent: MasterAgent): Promise<boolean | "retry"> {
   if (!read.ok) return "retry";
   const { status, outcome } = read;
   agent.patch({ prUrl: status.prUrl });
+  for (const pr of status.prs ?? []) setRepoPr(agent.deps.db, agent.claim.issueId, pr.repo, pr.url);
   if (outcome === "pr_green") return true;
   const because = GIVE_UP_COMMENTS[outcome] ?? outcome;
   const detail = status.reason ? `: ${status.reason}` : "";

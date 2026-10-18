@@ -1,10 +1,10 @@
-// Last edited: 2026-10-11 19:45 PDT
+// Last edited: 2026-10-18 13:17 PDT
 // `marshall run [--once]` — the orchestrator: reconcile, then loop with the real master agent
 // hooks until SIGINT or SIGTERM. `--once` does one reconcile + tick + pulse + notify tick and
 // exits, for a manual check. launchd runs this command (scripts/launchd/); it rotates the logs
 // once at start, writes the pidfile `marshall kill` and `status` read, and ticks the ntfy tailer.
 
-import { loadConfig, loadEnv, requireLinearApiKey } from "../config.ts";
+import { loadConfig, loadEnv, pickupOptions, requireLinearApiKey } from "../config.ts";
 import { openMigratedDb } from "../db/index.ts";
 import { connectLinear } from "../linear/index.ts";
 import { createLogger, type Logger, rotateLog } from "../log.ts";
@@ -65,12 +65,13 @@ export async function runLoop(opts: RunOptions): Promise<void> {
   const rotated = opts.once ? [] : rotateLogs();
   const log = createLogger({ command: "run" });
   if (rotated.length > 0) log.info("run.logs_rotated", { rotated });
-  trustRepo(config.repoPath, log);
+  for (const repo of config.repos) trustRepo(repo.repoPath, log);
   const linear = await connectLinear({
     apiKey,
     teamId: config.teamId,
     workspace: config.workspace,
     log,
+    pickup: pickupOptions(config),
   });
   const db = openMigratedDb(dbPath());
   const waiter = createRunWaiter(db);

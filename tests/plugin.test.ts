@@ -1,4 +1,4 @@
-// Last edited: 2026-09-22 12:44 CDT
+// Last edited: 2026-10-18 13:17 PDT
 // The plugin is what the agents load with --plugin-dir; a broken manifest or a skill without
 // frontmatter fails silently inside an agent, so these checks run here instead.
 
@@ -10,7 +10,14 @@ const PLUGIN_ROOT = resolve(import.meta.dir, "..", "plugin");
 const SKILLS_DIR = join(PLUGIN_ROOT, "skills");
 
 /** The skills the rest of Marshall refers to by name. Add here when a step adds one. */
-const REQUIRED_SKILLS = ["plan", "implement", "review", "handoff", "resolve-conflicts"];
+const REQUIRED_SKILLS = [
+  "plan",
+  "implement",
+  "implement-hemut",
+  "review",
+  "handoff",
+  "resolve-conflicts",
+];
 
 function frontmatter(path: string): Record<string, string> {
   const text = readFileSync(path, "utf8");
@@ -63,7 +70,8 @@ describe("skills", () => {
   test("implement quotes every implement.json field the schema requires", async () => {
     const { ImplementStatusSchema } = await import("../src/implement/status.ts");
     const text = readFileSync(join(SKILLS_DIR, "implement", "SKILL.md"), "utf8");
-    for (const key of Object.keys(ImplementStatusSchema.shape)) {
+    for (const [key, field] of Object.entries(ImplementStatusSchema.shape)) {
+      if (field.safeParse(undefined).success) continue; // optional fields (`prs`) need no quote
       expect(text).toContain(`"${key}"`);
     }
   });

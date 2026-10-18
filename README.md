@@ -1,4 +1,4 @@
-<!-- Last edited: 2026-10-11 19:38 PDT -->
+<!-- Last edited: 2026-10-18 13:17 PDT -->
 
 <a id="readme-top"></a>
 
@@ -184,6 +184,7 @@ Watch it from the [dashboard](#dashboard) or with `bin/marshall status` and `bin
 | `bin/marshall plan <identifier> --cwd <worktree> [--revise] [--json]` | Plan one issue in an existing worktree: classify, launch the planner, verify, post to Linear. |
 | `bin/marshall plan check <file>` | Check a plan file for the required sections, in order. |
 | `bin/marshall handoff check <file>` | Check a hand-off file: six sections in order, the section 5 sub-lists, a PR URL and a branch in section 6. |
+| `bin/marshall enqueue <plan-file> [--dry-run] [--json]` | Queue a finished plan: check it, then file a Todo issue with the plan as its body and the `marshall:queued` and `marshall:has-plan` labels. Marshall skips planning and implements it. See [`docs/hemut_runbook.md`](docs/hemut_runbook.md). |
 | `bin/marshall queue [--json]` | Dry-run one scheduler tick: the ordered pickable list and why each issue would or would not start now. Never writes. |
 | `bin/marshall run [--once]` | The orchestrator: reconcile, then poll Linear and drive the master agents until Ctrl-C. `--once` does one reconcile + pulse + tick and exits. |
 | `bun test` | Run the test suite. |
@@ -275,9 +276,21 @@ It is not the repo root because a plugin root's `bin/` goes on the agent's `PATH
 | `/marshall:implement <plan-path> <ISSUE-ID>` | Plan → commits → local gate → PR → CI → `/marshall:review` → fixes, up to `maxFixCycles` times. Always ends with a PR; a red run leaves a draft whose body starts with `## Still failing`. |
 | `/marshall:review <plan-path>` | The built-in `/code-review` bug hunt plus a Spec pass against the plan. `CONFIRMED` findings and spec gaps block; `PLAUSIBLE` ones are notes. |
 | `/marshall:handoff <plan-path> <ISSUE-ID>` | The read-only hand-off writer: six sections from the plan, the diff, and the PR into `~/.marshall/handoffs/<ISSUE-ID>.md`; see [`docs/handoff.md`](docs/handoff.md). |
+| `/marshall:implement-hemut <plan-path> <ISSUE-ID>` | The Hemut version of implement (`implementSkill` in the config): Hemut policy, one PR per repo a plan touches, never merges. |
 | `/marshall:resolve-conflicts <plan-path> <ISSUE-ID> <conflict\|ci>` | After a sibling PR merged: finish the rebase the orchestrator started (conflict mode) or fix the red CI it left (ci mode), then the full done gate. |
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+### Opt-in pick-up, several repos, and the overnight queue
+
+Three config settings let Marshall run unattended against a workspace with real work in Todo, such as Hemut's.
+
+- `pickup: "labeled"` takes only issues that carry `marshall:queued`. The default, `"assigned"`, takes every Todo issue assigned to you.
+- `repos` lists several repos (slug, path, base branch). A plan names the repos it touches in a `## Repos touched` section, and Marshall opens one worktree and one PR per repo on one branch. The PR is merged only by a human.
+- `marshall enqueue` queues a finished plan. A `marshall:has-plan` issue skips the planner.
+
+Agents also run behind a guard (`scripts/merge-guard.ts`) that denies `gh pr merge`, approvals, and pushes to a protected branch.
+See [`docs/hemut_runbook.md`](docs/hemut_runbook.md) for the whole flow and [`docs/hemut_overnight_queue_plan.md`](docs/hemut_overnight_queue_plan.md) for the design.
 
 ### Scheduler
 
@@ -306,6 +319,7 @@ See [`docs/state_machine.md`](docs/state_machine.md) for the full diagram.
 - [`docs/isolation.md`](docs/isolation.md) — slot → Compose project → ports, and how the env reaches an agent.
 - [`docs/handoff_template.md`](docs/handoff_template.md) — what each of the six hand-off sections is for.
 - [`docs/dashboard.md`](docs/dashboard.md) — the web dashboard: what each section means, Kill, switching and adding projects, and phone access over Tailscale.
+- [`docs/hemut_runbook.md`](docs/hemut_runbook.md) — the overnight plan queue for the Hemut repos: enqueue, multi-repo plans, never merge, VM setup.
 - [`docs/runbook.md`](docs/runbook.md) — install, projects, start/stop/pause/kill, notifications, and recovery.
 - [`docs/oracle_hosting_plan.md`](docs/oracle_hosting_plan.md) — running Marshall on an always-on Oracle VM.
 - [`docs/state_machine.md`](docs/state_machine.md) — every claim state and the pulse.

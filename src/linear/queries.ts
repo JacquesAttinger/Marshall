@@ -1,9 +1,10 @@
-// Last edited: 2026-09-29 19:05 CDT
+// Last edited: 2026-10-18 13:17 PDT
 // One GraphQL document plus its Zod response schema per Linear operation Marshall uses.
 // Field names follow Linear's public schema. Keep documents minimal: every field costs complexity.
 
 import { z } from "zod";
-import { BLOCKED_STATE, HUMAN_ONLY_LABEL, NEEDS_VERIFICATION_STATE } from "./map.ts";
+import type { PickupOptions } from "../config.ts";
+import { BLOCKED_STATE, HUMAN_ONLY_LABEL, NEEDS_VERIFICATION_STATE, QUEUED_LABEL } from "./map.ts";
 
 export interface Operation<T> {
   name: string;
@@ -112,24 +113,45 @@ export const TeamMetaOp: Operation<z.infer<typeof TeamMetaSchema>> = {
   schema: TeamMetaSchema,
 };
 
-export const PickableIssues: Operation<{ issues: { nodes: RawIssue[] } }> = {
-  name: "PickableIssues",
-  doc: `${ISSUE_FIELDS}
-query PickableIssues($teamId: ID!, $assigneeId: ID!) {
+const DEFAULT_PICKUP: PickupOptions = { mode: "assigned", label: QUEUED_LABEL };
+
+/**
+ * The pickable list: unstarted, assigned to Marshall's user, never `human-only`. In `labeled` mode
+ * the issue must also carry the opt-in label (passed as a variable, never spliced into the text).
+ */
+export function pickableIssuesOp(
+  pickup: PickupOptions = DEFAULT_PICKUP,
+): Operation<{ issues: { nodes: RawIssue[] } }> {
+  const labeled = pickup.mode === "labeled";
+  const vars = ["$teamId: ID!", "$assigneeId: ID!"];
+  if (labeled) vars.push("$label: String!");
+  if (pickup.projectId) vars.push("$projectId: ID!");
+  const labelFilter = labeled
+    ? `and: [
+        { labels: { some: { name: { eq: $label } } } }
+        { labels: { every: { name: { neq: "${HUMAN_ONLY_LABEL}" } } } }
+      ]`
+    : `labels: { every: { name: { neq: "${HUMAN_ONLY_LABEL}" } } }`;
+  const projectFilter = pickup.projectId ? "\n      project: { id: { eq: $projectId } }" : "";
+  return {
+    name: "PickableIssues",
+    doc: `${ISSUE_FIELDS}
+query PickableIssues(${vars.join(", ")}) {
   issues(
     filter: {
       team: { id: { eq: $teamId } }
       assignee: { id: { eq: $assigneeId } }
-      state: { type: { eq: "unstarted" } }
-      labels: { every: { name: { neq: "${HUMAN_ONLY_LABEL}" } } }
+      state: { type: { eq: "unstarted" } }${projectFilter}
+      ${labelFilter}
     }
     first: 50
   ) {
     nodes { ...IssueFields }
   }
 }`,
-  schema: z.object({ issues: z.object({ nodes: z.array(RawIssueSchema) }) }),
-};
+    schema: z.object({ issues: z.object({ nodes: z.array(RawIssueSchema) }) }),
+  };
+}
 
 /**
  * Issues a human has not closed yet whose PR may already be merged: Needs Verification and
@@ -213,6 +235,29 @@ export const CreateIssue: Operation<{
   schema: z.object({
     issueCreate: SuccessSchema.extend({
       issue: z.object({ id: z.string(), identifier: z.string(), url: z.string() }),
+    }),
+  }),
+};
+
+/** `CreateIssue` plus the `branchName` Hemut policy needs: the branch the PR must use. */
+export const CreatePlanIssue: Operation<{
+  issueCreate: {
+    success: boolean;
+    issue: { id: string; identifier: string; url: string; branchName: string };
+  };
+}> = {
+  name: "CreatePlanIssue",
+  doc: `mutation CreatePlanIssue($input: IssueCreateInput!) {
+  issueCreate(input: $input) { success issue { id identifier url branchName } }
+}`,
+  schema: z.object({
+    issueCreate: SuccessSchema.extend({
+      issue: z.object({
+        id: z.string(),
+        identifier: z.string(),
+        url: z.string(),
+        branchName: z.string(),
+      }),
     }),
   }),
 };

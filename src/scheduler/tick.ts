@@ -1,10 +1,12 @@
-// Last edited: 2026-10-03 18:22 CDT
+// Last edited: 2026-10-18 13:17 PDT
 // One pass of the scheduler: order the pickable issues and start what the caps allow. Each start
 // writes a `claiming` row before it touches Linear, so a crash in the middle leaves a row reconcile
 // can repair instead of an issue that is In Progress and invisible.
 
 import { capCheck, isPaused } from "../caps.ts";
-import { BLOCKED_STATE, isHumanOnly, type PickableIssue } from "../linear/index.ts";
+import { BLOCKED_STATE, isHumanOnly, isOptedIn, type PickableIssue } from "../linear/index.ts";
+import { resolveRepos } from "../repos.ts";
+import { claimRepos, setClaimRepos } from "./repos.ts";
 import {
   abandonClaim,
   beginClaim,
@@ -25,6 +27,7 @@ import {
   type TickDecision,
   type TickResult,
 } from "./types.ts";
+import { openClaimWorktrees } from "./worktrees.ts";
 
 /** Linear priority 0 is "none"; it sorts after Low (4). Ties break on age, oldest first. */
 export function priorityRank(priority: number): number {
@@ -128,19 +131,24 @@ async function startIssue(
     return skipped(issue, bounce, "claim_lost");
   }
   const branch = (bounce && prior?.branch) || issue.branchName;
-  const spec = { repoPath: config.repoPath, branch, baseBranch: config.baseBranch };
-  let worktreePath: string;
+  const resolved = resolveRepos(config, issue);
+  if (!resolved.ok) return failStart(deps, issue, claiming, "repos", new Error(resolved.error));
+  let opened: Awaited<ReturnType<typeof openClaimWorktrees>>;
   try {
-    worktreePath = bounce ? await worktrees.reuse(spec) : await worktrees.create(spec);
+    opened = await openClaimWorktrees(worktrees, resolved.repos, branch, bounce, resolved.explicit);
   } catch (err) {
     return failStart(deps, issue, claiming, "worktree", err);
   }
+  const worktreePath = opened.primaryPath;
   const claim = finishClaim(
     db,
     issue.id,
     { identifier: issue.identifier, title: issue.title, branch, worktreePath, bounce },
     now,
   );
+  if (opened.rows.length > 0 || claimRepos(db, issue.id).length > 0) {
+    setClaimRepos(db, issue.id, opened.rows);
+  }
   if (!bounce) insertStart(db, issue.id, now);
   insertEvent(db, now, "scheduler.started", issue.id, claim.agentId, {
     slot,
@@ -166,6 +174,12 @@ export async function consider(deps: SchedulerDeps, issue: PickableIssue): Promi
   if (isHumanOnly(issue.labels)) {
     log.debug("scheduler.skip_human_only", { issueId: issue.id, identifier: issue.identifier });
     return skipped(issue, false, "human_only");
+  }
+  // Same belt and suspenders for `pickup: "labeled"`: the query only returns queued issues, but a
+  // human who removes the label after the list was read must still stop the start.
+  if (!isOptedIn({ mode: config.pickup, label: config.pickupLabel }, issue.labels)) {
+    log.debug("scheduler.skip_not_queued", { issueId: issue.id, identifier: issue.identifier });
+    return skipped(issue, false, "not_queued");
   }
   const existing = getClaim(db, issue.id);
   if (existing && isLive(existing)) {

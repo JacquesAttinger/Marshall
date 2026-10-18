@@ -5,7 +5,7 @@ argument-hint: <plan-path> <ISSUE-ID>
 disable-model-invocation: true
 ---
 
-<!-- Last edited: 2026-09-20 15:55 CDT -->
+<!-- Last edited: 2026-10-18 19:30 PDT -->
 
 You are the hand-off writer in an unattended pipeline.
 The implementer has finished: the PR is open and green.
@@ -16,6 +16,8 @@ Nobody reads your messages; the orchestrator validates the file you write and po
 
 - `$ARGUMENTS` is `<plan-path> <ISSUE-ID>`. The plan is relative to the worktree you run in.
 - The runner sets these in your environment for every Bash call: `MARSHALL_ISSUE_DIR`, `MARSHALL_ISSUE_URL`, `MARSHALL_HANDOFF_PATH`, `MARSHALL_ROUND`, `MARSHALL_BASE_BRANCH`, `MARSHALL_PR_URL`.
+  For a plan that touches several repos the runner also sets `MARSHALL_REPOS_JSON`: a JSON array in merge order of `{ slug, role, order, dir, base }`. `MARSHALL_PR_URL` is the primary repo's PR.
+  Treat every `dir` as read-only, like the worktree you run in.
   Bash state does not persist between your tool calls; read these vars fresh in each call and never `export` anything you need later.
 - `$MARSHALL_ISSUE_DIR/implement.json` is the implementer's final status: `branch`, `prUrl`, `reviewNotes`, `followups`.
 - `template.md` in this skill's base directory is the package template. Read it before you write.
@@ -38,11 +40,13 @@ Nobody reads your messages; the orchestrator validates the file you write and po
 1. **Preflight.** Split `$ARGUMENTS`. Check the six env vars are set, the plan file exists, `implement.json` exists and has a `prUrl` and a `branch`, and `gh pr view "$MARSHALL_PR_URL" --json url,title,state` works.
    Anything missing → print `HANDOFF_BLOCKED <what is missing>` and stop.
 2. **Read the plan.** Its "Where to find it", "Orientation", "What is wrong and why", and "Decisions made alone" sections are your starting material; rewrite them in the past tense against the code as it is now, and check every path still exists.
-3. **Pin the diff.** `git fetch origin --quiet`, then `base=$(git merge-base "origin/$MARSHALL_BASE_BRANCH" HEAD)`; `git diff --stat "$base"..HEAD` lists what changed. Read every source file in that list that matters, and the tests.
+3. **Pin the diff.** `git fetch origin --quiet`, then `base=$(git merge-base "origin/$MARSHALL_BASE_BRANCH" HEAD)`; `git diff --stat "$base"..HEAD` lists what changed.
+   With `MARSHALL_REPOS_JSON`, do this for every entry with `git -C <dir>` and that entry's `base`, and read the other repos' PR URLs from the `prs` list in `implement.json`. Read every source file in that list that matters, and the tests.
 4. **Read `implement.json`.** Take `branch`, `prUrl`, `reviewNotes`, and the `title` of each entry in `followups`.
 5. **Round N.** If `MARSHALL_ROUND` is greater than 1, read the previous package at `$MARSHALL_HANDOFF_PATH` (if it exists) and the newest human comment context in the plan's latest `## Revision N` section. You will rewrite the whole package and add a `## Round <MARSHALL_ROUND> — what changed` block right after the TLDR: two to five lines on what the bounce asked for and what changed since the last round.
 6. **Write the package** from `template.md`: line 1 `# <ISSUE-ID> — <issue title>`, line 3 `<!-- Last edited: <date and time> -->`, then `**TLDR:**`, then (round > 1 only) the Round block, then the five H2 sections in the template's order with the template's exact headings. One full sentence per line in prose.
-7. **Self-check** before you finish: the H2 list is exactly the template's (plus the optional Round block, before "Where to find it"); section 5 has all four bold labels; section 6 has `- Branch:` with the branch from `implement.json` and `- PR:` with `$MARSHALL_PR_URL`. Fix, then `mv` the temp file to `$MARSHALL_HANDOFF_PATH`.
+7. **Self-check** before you finish: the H2 list is exactly the template's (plus the optional Round block, before "Where to find it"); section 5 has all four bold labels; section 6 has `- Branch:` with the branch from `implement.json` and `- PR:` with `$MARSHALL_PR_URL`.
+   For several repos, the `- PR:` line comes first and holds the primary PR, then one `- Other PRs:` line lists each other repo's PR as `<slug>: <url>`, then one `- Merge order:` line lists the slugs in merge order and says why (for example, "`DB-Migrations` first: the app reads the new column"). Fix, then `mv` the temp file to `$MARSHALL_HANDOFF_PATH`.
 8. Print the finish line.
 
 ## The six sections
@@ -54,6 +58,7 @@ Nobody reads your messages; the orchestrator validates the file you write and po
 5. **What the agent did** — the fix in prose, then four bold sub-lists in this order:
    **Files that matter** (path — what changed and why), **Decisions made alone** (from the plan plus any made while implementing), **Review notes (not fixed)** (the `reviewNotes` lines verbatim, or `(none)`), **Follow-ups proposed** (the `followups` titles, or `(none)`).
 6. **Verification recipe** — `- Branch:` in backticks, `- PR:` the URL, `- Setup:` what to bring up or seed (or `none`), `- Steps:` numbered, one action each, `- Expected:` one `PASS when …` line per step.
+   A plan that touches several repos adds `- Other PRs:` and `- Merge order:` right after `- PR:` (see step 7).
 
 ## Round N — what changed
 

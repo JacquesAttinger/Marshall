@@ -1,4 +1,4 @@
-// Last edited: 2026-10-11 19:38 PDT
+// Last edited: 2026-10-18 13:17 PDT
 // The dashboard's pure templates: escaping, the hand-off sanitizer, every empty state, each card
 // and panel variant, every queue status code, and the page shell's CSP-friendly markup.
 
@@ -223,6 +223,16 @@ describe("renderNeedsYou", () => {
     expect(out).toContain('<details data-handoff="TOD-12">');
     expect(out).toContain("Show hand-off");
     expect(out).toContain("3 h");
+  });
+
+  test("a multi-repo card links each other repo's PR after the primary", () => {
+    const multi = card({
+      otherPrs: [{ repo: "DB-Migrations", url: "https://github.com/o/db/pull/7" }],
+    });
+    const out = String(renderNeedsYou({ cards: [multi], checkedAgainstLinear: true }, NOW, null));
+    expect(out).toContain("PR #26");
+    expect(out).toContain("DB-Migrations PR #7");
+    expect(out.indexOf("PR #26")).toBeLessThan(out.indexOf("DB-Migrations PR #7"));
   });
 
   test("a blocked card shows its reason; a rebasing card says it waits on CI", () => {

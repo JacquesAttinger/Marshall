@@ -1,4 +1,4 @@
-// Last edited: 2026-09-20 15:45 CDT
+// Last edited: 2026-10-18 13:17 PDT
 // The hand-off file's shape check: six H2s in order, the optional Round block before section 2,
 // the two bold sub-lists in section 5, and a PR URL plus a branch line in section 6. Pure text
 // functions, so the tests pass strings; `problems` is what the resume nudge and the CLI print.
@@ -103,8 +103,12 @@ export function checkHandoffText(text: string, expected: Expected = {}): Handoff
     }
   }
   const facts = recipeFacts(text);
-  if (sectionBody(text, HANDOFF_SECTIONS[5]) !== null)
-    problems.push(...factProblems(facts, expected));
+  // A multi-repo hand-off lists several PRs in this section; the primary's only has to be among them.
+  const recipe = sectionBody(text, HANDOFF_SECTIONS[5]);
+  if (recipe !== null) {
+    const prUrl = expected.prUrl && recipe.includes(expected.prUrl) ? expected.prUrl : facts.prUrl;
+    problems.push(...factProblems({ ...facts, prUrl }, expected));
+  }
   return {
     ok: problems.length === 0,
     missing,

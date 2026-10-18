@@ -1,12 +1,13 @@
-// Last edited: 2026-09-29 19:05 CDT
+// Last edited: 2026-10-18 13:17 PDT
 // Moves an issue to Done when its PR merges, by two paths. The merge poll (`rebase.ts`) calls
 // `markDone` the moment it sees a parked PR merge. `sweepDone` catches the merges that poll
 // missed (Marshall was off, or the claim was reused for a re-run): every `doneSweepMinutes` it
 // looks at this user's Needs Verification and Blocked issues and finds each one's PR by title.
 
 import type { MasterDeps } from "../master/types.ts";
-import { BLOCKED, getClaim, RELEASED } from "../scheduler/index.ts";
+import { BLOCKED, claimRepos, getClaim, RELEASED } from "../scheduler/index.ts";
 import { getFlag, insertEvent, setFlag } from "../scheduler/store.ts";
+import { sweepMergedPr } from "./multi.ts";
 import { type FoundPr, findPrsFor } from "./pr.ts";
 
 export const DONE_SWEEP_FLAG = "done_sweep_at";
@@ -64,8 +65,13 @@ export async function sweepDone(deps: MasterDeps): Promise<void> {
   for (const issue of candidates) {
     if (hasActiveClaim(deps, issue.id)) continue;
     try {
-      const prs = await findPrsFor(deps.gh, issue.identifier, deps.config.repoPath);
-      const merged = mergedPrOf(prs);
+      // One search per configured repo: a multi-repo issue has a PR in each.
+      const byRepo = new Map<string, FoundPr[]>();
+      for (const repo of deps.config.repos) {
+        byRepo.set(repo.repoPath, await findPrsFor(deps.gh, issue.identifier, repo.repoPath));
+      }
+      const expected = claimRepos(deps.db, issue.id).map((r) => r.repoPath);
+      const merged = sweepMergedPr(byRepo, expected);
       if (merged) await markDone(deps, issue, merged.url, merged.mergedAt, "sweep");
     } catch (err) {
       deps.log.warn("master.done_sweep_failed", {

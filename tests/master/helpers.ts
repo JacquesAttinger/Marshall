@@ -1,4 +1,4 @@
-// Last edited: 2026-10-12 18:13 PDT
+// Last edited: 2026-10-18 13:17 PDT
 // Master agent test setup: an in-memory DB, a temp MARSHALL_HOME, a fake clock, and fakes for
 // every injectable seam (runner, waiter, git, gh, the plan and hand-off phases, Linear). Runs are
 // rows the fake runner inserts; a test ends one with `finish(runId, terminal)`.
@@ -18,7 +18,13 @@ import { type ImplementStatus, implementStatusPath } from "../../src/implement/s
 import type { CreatedIssue, FollowUpInput, PickableIssue } from "../../src/linear/index.ts";
 import { createOrchestrator, type Orchestrator } from "../../src/master/orchestrator.ts";
 import type { GitOps, MasterDeps, RunnerOps } from "../../src/master/types.ts";
-import type { PlanPhaseInput, PlanPhaseResult, RunWaiter } from "../../src/plan/index.ts";
+import type {
+  IntakeInput,
+  IntakeResult,
+  PlanPhaseInput,
+  PlanPhaseResult,
+  RunWaiter,
+} from "../../src/plan/index.ts";
 import { terminalOf } from "../../src/plan/wait.ts";
 import { insertRun, updateRun } from "../../src/runner/store.ts";
 import type { LaunchOpts, ResumeOpts, Terminal } from "../../src/runner/types.ts";
@@ -80,12 +86,15 @@ export interface FakeGh {
 
 export interface FakePhases {
   planCalls: PlanPhaseInput[];
+  intakeCalls: IntakeInput[];
+  intakeResults: IntakeResult[];
   handoffCalls: HandoffPhaseInput[];
   postCalls: PostInput[];
   planResults: PlanPhaseResult[];
   handoffResults: HandoffPhaseResult[];
   postResult: PostResult;
   plan(input: PlanPhaseInput): Promise<PlanPhaseResult>;
+  intake(input: IntakeInput): Promise<IntakeResult>;
   handoff(input: HandoffPhaseInput): Promise<HandoffPhaseResult>;
   postHandoff(input: PostInput): Promise<PostResult>;
 }
@@ -293,6 +302,8 @@ export function okHandoff(overrides: Partial<Extract<HandoffPhaseResult, { ok: t
 function makePhases(): FakePhases {
   const phases: FakePhases = {
     planCalls: [],
+    intakeCalls: [],
+    intakeResults: [],
     handoffCalls: [],
     postCalls: [],
     planResults: [],
@@ -308,6 +319,10 @@ function makePhases(): FakePhases {
     async plan(input) {
       phases.planCalls.push(input);
       return phases.planResults.shift() ?? okPlan();
+    },
+    async intake(input) {
+      phases.intakeCalls.push(input);
+      return phases.intakeResults.shift() ?? { ok: true, planPath: PLAN, repos: [] };
     },
     async handoff(input) {
       phases.handoffCalls.push(input);

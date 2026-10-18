@@ -1,4 +1,4 @@
-// Last edited: 2026-10-03 18:27 CDT
+// Last edited: 2026-10-18 13:17 PDT
 // `marshall queue [--json]` — a dry run of one scheduler tick. Prints the ordered pickable list and,
 // for each issue, what the next tick would do with it and why. Reads Linear and the DB; writes nothing.
 
@@ -10,11 +10,12 @@ import {
   evaluateCaps,
   readCapCounts,
 } from "../caps.ts";
-import { type Config, loadConfig, loadEnv, requireLinearApiKey } from "../config.ts";
+import { type Config, loadConfig, loadEnv, pickupOptions, requireLinearApiKey } from "../config.ts";
 import { migrate, openDb } from "../db/index.ts";
 import {
   connectLinear,
   isHumanOnly,
+  isOptedIn,
   type LinearClient,
   type PickableIssue,
 } from "../linear/index.ts";
@@ -22,10 +23,16 @@ import { createLogger } from "../log.ts";
 import { dbPath, ensureHome } from "../paths.ts";
 import { BLOCKED, getClaim, isLive, liveClaims, orderIssues } from "../scheduler/index.ts";
 
-export type QueueKind = "fresh" | "bounce" | "live" | "blocked" | "human_only";
+export type QueueKind = "fresh" | "bounce" | "live" | "blocked" | "human_only" | "not_queued";
 
 /** What the next tick does with a row, as one code: a start, or the first rule that stops it. */
-export type QueueStatus = "next_start" | CapReason | "live" | "bounce_limit" | "human_only";
+export type QueueStatus =
+  | "next_start"
+  | CapReason
+  | "live"
+  | "bounce_limit"
+  | "human_only"
+  | "not_queued";
 
 export interface QueueRow {
   identifier: string;
@@ -46,6 +53,8 @@ export interface QueueReport {
   pausedUntil: string | null;
   pausedAt: string | null;
   counts: CapCounts;
+  /** The pick-up rule: `assigned` takes every Todo issue, `labeled` only those with `label`. */
+  pickup: { mode: Config["pickup"]; label: string };
   caps: Pick<Config, "maxAgents" | "dailyStartCap" | "windowStartCap" | "windowHours">;
   rows: QueueRow[];
 }
@@ -80,6 +89,7 @@ export async function collectQueue(deps: QueueDeps): Promise<QueueReport> {
     pausedUntil: initial.pausedUntil,
     pausedAt: initial.pausedAt,
     counts: initial,
+    pickup: { mode: config.pickup, label: config.pickupLabel },
     caps: {
       maxAgents: config.maxAgents,
       dailyStartCap: config.dailyStartCap,
@@ -111,6 +121,16 @@ function rowFor(issue: PickableIssue, db: Database, config: Config, counts: CapC
       wouldStart: false,
       reasons: ["human-only label: Marshall never picks this up"],
       status: "human_only",
+    };
+  }
+  if (!isOptedIn({ mode: config.pickup, label: config.pickupLabel }, issue.labels)) {
+    return {
+      ...base,
+      kind: "not_queued",
+      bounces: 0,
+      wouldStart: false,
+      reasons: [`no "${config.pickupLabel}" label: pick-up is opt-in for this project`],
+      status: "not_queued",
     };
   }
   const existing = getClaim(db, issue.id);
@@ -176,6 +196,9 @@ export function formatQueue(report: QueueReport): string {
       ? [`PAUSED by \`marshall pause\` at ${report.pausedAt} (marshall resume)`]
       : []),
     ...(report.pausedUntil ? [`PAUSED until ${report.pausedUntil}`] : []),
+    ...(report.pickup.mode === "labeled"
+      ? [`Pick-up: only issues labeled "${report.pickup.label}"`]
+      : []),
     `Agents ${counts.live}/${caps.maxAgents} busy · starts today ${counts.today}/${caps.dailyStartCap} · ${window}${frees}`,
     "",
   ];
@@ -210,6 +233,7 @@ export async function runQueue(opts: QueueOptions): Promise<void> {
     teamId: config.teamId,
     workspace: config.workspace,
     log,
+    pickup: pickupOptions(config),
   });
   ensureHome();
   const db = openDb(dbPath());

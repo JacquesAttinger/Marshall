@@ -1,4 +1,4 @@
-// Last edited: 2026-10-03 18:27 CDT
+// Last edited: 2026-10-18 13:17 PDT
 // Builders for the dashboard's view data, so render tests state only the field they are about.
 
 import type { QueueReport, QueueRow } from "../../src/cli/queue.ts";
@@ -51,6 +51,7 @@ export function card(overrides: Partial<NeedsYouCard> = {}): NeedsYouCard {
     url: "https://linear.app/w/issue/TOD-12",
     state: "awaiting_human",
     prUrl: "https://github.com/o/r/pull/26",
+    otherPrs: [],
     updatedAt: new Date(NOW.getTime() - 3 * 3_600_000).toISOString(),
     tldr: null,
     round: null,
@@ -82,6 +83,7 @@ export function queueReport(rows: QueueRow[], windowFreesAt: string | null = nul
     pausedUntil: null,
     pausedAt: null,
     counts: { live: 0, today: 0, window: 0, windowFreesAt, pausedUntil: null, pausedAt: null },
+    pickup: { mode: "assigned", label: "marshall:queued" },
     caps: { maxAgents: 3, dailyStartCap: 10, windowStartCap: 10, windowHours: 3 },
     rows,
   };

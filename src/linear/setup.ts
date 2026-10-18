@@ -1,4 +1,4 @@
-// Last edited: 2026-09-21 15:10 CDT
+// Last edited: 2026-10-18 13:17 PDT
 // Idempotent workspace setup: the Needs Verification and Blocked states, the agent-filed and
 // human-only labels, and the marshall label group with one child per agent slot. Reads team
 // metadata once, creates only what is missing.
@@ -10,10 +10,12 @@ import {
   AGENT_FILED_LABEL,
   AGENT_IDS,
   BLOCKED_STATE,
+  HAS_PLAN_LABEL,
   HUMAN_ONLY_LABEL,
   IN_PROGRESS_STATE,
   MARSHALL_LABEL_GROUP,
   NEEDS_VERIFICATION_STATE,
+  QUEUED_LABEL,
 } from "./map.ts";
 import { CreateLabel, CreateState, type TeamMeta, TeamMetaOp } from "./queries.ts";
 
@@ -31,6 +33,10 @@ export interface SetupResult {
   blocked: Ensured;
   agentFiled: Ensured;
   humanOnly: Ensured;
+  /** The opt-in label for `pickup: "labeled"`. */
+  queued: Ensured;
+  /** Marks an issue that carries a finished plan, so the planner is skipped. */
+  hasPlan: Ensured;
   marshallGroup: Ensured;
   agents: Ensured[];
 }
@@ -132,6 +138,8 @@ export async function ensureWorkspaceSetup(
   );
   const agentFiled = await ensureLabel(gql, teamId, labels, { name: AGENT_FILED_LABEL }, log);
   const humanOnly = await ensureLabel(gql, teamId, labels, { name: HUMAN_ONLY_LABEL }, log);
+  const queued = await ensureLabel(gql, teamId, labels, { name: QUEUED_LABEL }, log);
+  const hasPlan = await ensureLabel(gql, teamId, labels, { name: HAS_PLAN_LABEL }, log);
   const marshallGroup = await ensureLabel(
     gql,
     teamId,
@@ -151,5 +159,14 @@ export async function ensureWorkspaceSetup(
       ),
     );
   }
-  return { needsVerification, blocked, agentFiled, humanOnly, marshallGroup, agents };
+  return {
+    needsVerification,
+    blocked,
+    agentFiled,
+    humanOnly,
+    queued,
+    hasPlan,
+    marshallGroup,
+    agents,
+  };
 }

@@ -1,4 +1,4 @@
-// Last edited: 2026-10-03 18:22 CDT
+// Last edited: 2026-10-18 13:25 PDT
 // One pass of the scheduler: order the pickable issues and start what the caps allow. Each start
 // writes a `claiming` row before it touches Linear, so a crash in the middle leaves a row reconcile
 // can repair instead of an issue that is In Progress and invisible.
@@ -166,6 +166,12 @@ export async function consider(deps: SchedulerDeps, issue: PickableIssue): Promi
   if (isHumanOnly(issue.labels)) {
     log.debug("scheduler.skip_human_only", { issueId: issue.id, identifier: issue.identifier });
     return skipped(issue, false, "human_only");
+  }
+  // Same belt and suspenders for `pickup: "labeled"`: the query only returns queued issues, but a
+  // human who removes the label after the list was read must still stop the start.
+  if (config.pickup === "labeled" && !issue.labels.includes(config.pickupLabel)) {
+    log.debug("scheduler.skip_not_queued", { issueId: issue.id, identifier: issue.identifier });
+    return skipped(issue, false, "not_queued");
   }
   const existing = getClaim(db, issue.id);
   if (existing && isLive(existing)) {

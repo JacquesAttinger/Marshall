@@ -22,6 +22,25 @@ const issues = () => [
   pickable({ identifier: "CB-4", priority: 3, createdAt: "2026-09-03T00:00:00.000Z" }),
 ];
 
+describe("collectQueue: opt-in pick-up", () => {
+  test("labeled mode marks an unlabeled issue not_queued and names the mode in the report", async () => {
+    h = makeHarness({
+      config: { pickup: "labeled" },
+      issues: [
+        pickable({ identifier: "CB-1", labels: [] }),
+        pickable({ identifier: "CB-2", labels: ["marshall:queued"] }),
+      ],
+    });
+    const report = await collectQueue(h.deps);
+    expect(report.pickup).toEqual({ mode: "labeled", label: "marshall:queued" });
+    expect(report.rows.map((r) => [r.identifier, r.status, r.wouldStart])).toEqual([
+      ["CB-1", "not_queued", false],
+      ["CB-2", "next_start", true],
+    ]);
+    expect(formatQueue(report)).toContain('Pick-up: only issues labeled "marshall:queued"');
+  });
+});
+
 describe("collectQueue", () => {
   test("matches what the next tick does: same order, same starts, same reasons", async () => {
     h = makeHarness({ issues: issues() });

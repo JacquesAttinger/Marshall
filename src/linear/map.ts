@@ -1,4 +1,4 @@
-// Last edited: 2026-09-29 19:05 CDT
+// Last edited: 2026-10-18 13:20 PDT
 // Pure mappers from Linear's raw issue shape to Marshall's types. No fetch, so tests hit them directly.
 
 import type { RawIssue, RawIssueDetail } from "./queries.ts";
@@ -11,6 +11,10 @@ export const MARSHALL_LABEL_GROUP = "marshall";
 export const AGENT_FILED_LABEL = "agent-filed";
 /** A human puts this label on an issue to keep Marshall from ever picking it up. */
 export const HUMAN_ONLY_LABEL = "human-only";
+/** `pickup: "labeled"` takes only issues with this label. `marshall enqueue` puts it on. */
+export const QUEUED_LABEL = "marshall:queued";
+/** The issue carries a finished plan, so the planner is skipped (see `src/plan/intake.ts`). */
+export const HAS_PLAN_LABEL = "marshall:has-plan";
 export const NEEDS_VERIFICATION_STATE = "Needs Verification";
 export const IN_PROGRESS_STATE = "In Progress";
 export const TODO_STATE = "Todo";

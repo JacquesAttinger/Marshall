@@ -1,4 +1,4 @@
-// Last edited: 2026-10-12 18:02 PDT
+// Last edited: 2026-10-18 13:20 PDT
 // Typed loaders for marshall.config.json (committed, JSONC: `//` and `/* */` comments allowed)
 // and process.env (from .env).
 
@@ -44,6 +44,16 @@ export const ConfigSchema = z
         message: "must be an existing directory",
       }),
     baseBranch: z.string().min(1).default("main"),
+    /**
+     * Which Todo issues the scheduler takes. `assigned`: every unstarted issue assigned to the key's
+     * user (the default). `labeled`: only those that also carry `pickupLabel`, so a workspace with
+     * real work in Todo (Hemut) is never touched unless a human opts the issue in.
+     */
+    pickup: z.enum(["assigned", "labeled"]).default("assigned"),
+    /** The opt-in label for `pickup: "labeled"`. `marshall linear setup` creates the default. */
+    pickupLabel: z.string().min(1).default("marshall:queued"),
+    /** Optional Linear project (a grouping inside the team) that narrows the pick-up further. */
+    linearProjectId: z.string().min(1).optional(),
     maxAgents: z.number().int().min(1).max(3).default(2),
     dailyStartCap: positiveInt.default(6),
     windowStartCap: positiveInt.default(2),
@@ -111,6 +121,21 @@ export function handoffModel(config: Config): string {
 /** The model for `/marshall:implement` and `/marshall:resolve-conflicts`: spec 6.1 says Opus. */
 export function implementModel(config: Config): string {
   return config.models.implement ?? "opus";
+}
+
+/** What the Linear client needs to build the pick-up query. */
+export interface PickupOptions {
+  mode: "assigned" | "labeled";
+  label: string;
+  projectId?: string;
+}
+
+export function pickupOptions(config: Config): PickupOptions {
+  return {
+    mode: config.pickup,
+    label: config.pickupLabel,
+    ...(config.linearProjectId ? { projectId: config.linearProjectId } : {}),
+  };
 }
 
 export const EnvSchema = z.object({

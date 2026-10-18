@@ -1,11 +1,11 @@
-// Last edited: 2026-10-11 20:30 PDT
+// Last edited: 2026-10-18 13:25 PDT
 // The dashboard's long-lived state: one DB handle (opened without `migrate()`, so it never races
 // the daemon's migration at login), the 4 s section cache, the 60 s Linear cache, and the
 // hand-off reader. The server asks this module for data and never touches the DB itself.
 
 import type { Database } from "bun:sqlite";
 import { existsSync, readFileSync } from "node:fs";
-import type { Config } from "../config.ts";
+import { type Config, pickupOptions } from "../config.ts";
 import { listMigrations, openDb, schemaVersion } from "../db/index.ts";
 import { type KillResult, orchestratorPid, requestKill } from "../kill.ts";
 import type { DaemonDeps } from "../launchd.ts";
@@ -79,7 +79,14 @@ export function createDashboardContext(deps: ContextDeps): DashboardContext {
   const connect =
     deps.connect ??
     (apiKey
-      ? () => connectLinear({ apiKey, teamId: config.teamId, workspace: config.workspace, log })
+      ? () =>
+          connectLinear({
+            apiKey,
+            teamId: config.teamId,
+            workspace: config.workspace,
+            log,
+            pickup: pickupOptions(config),
+          })
       : null);
   const linear = createLinearCache({ connect, ttlMs: LINEAR_TTL_MS, now, log });
   const listSessions = deps.listSessions ?? listDaemonSessions;

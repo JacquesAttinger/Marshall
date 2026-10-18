@@ -120,6 +120,8 @@ async function stepLinear(run: Run): Promise<string> {
     result.blocked,
     result.agentFiled,
     result.humanOnly,
+    result.queued,
+    result.hasPlan,
     result.marshallGroup,
     ...result.agents,
   ];

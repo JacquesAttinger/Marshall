@@ -82,6 +82,7 @@ export function queueReport(rows: QueueRow[], windowFreesAt: string | null = nul
     pausedUntil: null,
     pausedAt: null,
     counts: { live: 0, today: 0, window: 0, windowFreesAt, pausedUntil: null, pausedAt: null },
+    pickup: { mode: "assigned", label: "marshall:queued" },
     caps: { maxAgents: 3, dailyStartCap: 10, windowStartCap: 10, windowHours: 3 },
     rows,
   };

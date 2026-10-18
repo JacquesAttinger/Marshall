@@ -113,6 +113,49 @@ describe("connectLinear", () => {
   });
 });
 
+describe("listPickable: opt-in pick-up", () => {
+  test("labeled mode refuses a team that lacks the opt-in label and points at setup", async () => {
+    const team = fullTeamData();
+    team.team.labels.nodes = team.team.labels.nodes.filter((l) => l.name !== "marshall:queued");
+    const fake = fakeLinear({ TeamMeta: () => team });
+    const { log } = recordingLogger();
+    const attempt = connectLinear({
+      apiKey: "lin_test",
+      teamId: IDS.team,
+      workspace: "chessbuddy",
+      log,
+      fetchImpl: fake.fetchImpl,
+      pickup: { mode: "labeled", label: "marshall:queued" },
+    });
+    await expect(attempt).rejects.toThrow(/label "marshall:queued".*marshall linear setup/);
+  });
+
+  test("builds the labeled query with the label and project variables", async () => {
+    const fake = fakeLinear({});
+    const { log } = recordingLogger();
+    const client = await connectLinear({
+      apiKey: "lin_test",
+      teamId: IDS.team,
+      workspace: "chessbuddy",
+      log,
+      fetchImpl: fake.fetchImpl,
+      pickup: { mode: "labeled", label: "marshall:queued", projectId: "proj-1" },
+    });
+    await client.listPickable();
+    const call = fake.callsFor("PickableIssues")[0];
+    expect(call?.variables).toEqual({
+      teamId: IDS.team,
+      assigneeId: IDS.viewer,
+      label: "marshall:queued",
+      projectId: "proj-1",
+    });
+    expect(call?.query).toContain("$label: String!");
+    expect(call?.query).toContain("labels: { some: { name: { eq: $label } } }");
+    expect(call?.query).toContain('labels: { every: { name: { neq: "human-only" } } }');
+    expect(call?.query).toContain("project: { id: { eq: $projectId } }");
+  });
+});
+
 describe("listPickable", () => {
   test("filters by team, viewer, and unstarted state and maps the nodes", async () => {
     const { fake, client } = await connect({

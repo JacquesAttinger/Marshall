@@ -1,4 +1,4 @@
-// Last edited: 2026-09-29 19:05 CDT
+// Last edited: 2026-10-18 13:20 PDT
 // One GraphQL document plus its Zod response schema per Linear operation Marshall uses.
 // Field names follow Linear's public schema. Keep documents minimal: every field costs complexity.
 
@@ -112,24 +112,55 @@ export const TeamMetaOp: Operation<z.infer<typeof TeamMetaSchema>> = {
   schema: TeamMetaSchema,
 };
 
-export const PickableIssues: Operation<{ issues: { nodes: RawIssue[] } }> = {
-  name: "PickableIssues",
-  doc: `${ISSUE_FIELDS}
-query PickableIssues($teamId: ID!, $assigneeId: ID!) {
+/** How the pick-up query narrows the team's Todo list. Mirrors `PickupOptions` in `config.ts`. */
+export interface PickupFilter {
+  mode: "assigned" | "labeled";
+  label: string;
+  projectId?: string;
+}
+
+const DEFAULT_PICKUP: PickupFilter = { mode: "assigned", label: "marshall:queued" };
+
+/**
+ * The pickable list: unstarted, assigned to Marshall's user, never `human-only`. In `labeled` mode
+ * the issue must also carry the opt-in label (passed as a variable, never spliced into the text).
+ */
+export function pickableIssuesOp(
+  pickup: PickupFilter = DEFAULT_PICKUP,
+): Operation<{ issues: { nodes: RawIssue[] } }> {
+  const labeled = pickup.mode === "labeled";
+  const vars = ["$teamId: ID!", "$assigneeId: ID!"];
+  if (labeled) vars.push("$label: String!");
+  if (pickup.projectId) vars.push("$projectId: ID!");
+  const labelFilter = labeled
+    ? `and: [
+        { labels: { some: { name: { eq: $label } } } }
+        { labels: { every: { name: { neq: "${HUMAN_ONLY_LABEL}" } } } }
+      ]`
+    : `labels: { every: { name: { neq: "${HUMAN_ONLY_LABEL}" } } }`;
+  const projectFilter = pickup.projectId ? "\n      project: { id: { eq: $projectId } }" : "";
+  return {
+    name: "PickableIssues",
+    doc: `${ISSUE_FIELDS}
+query PickableIssues(${vars.join(", ")}) {
   issues(
     filter: {
       team: { id: { eq: $teamId } }
       assignee: { id: { eq: $assigneeId } }
-      state: { type: { eq: "unstarted" } }
-      labels: { every: { name: { neq: "${HUMAN_ONLY_LABEL}" } } }
+      state: { type: { eq: "unstarted" } }${projectFilter}
+      ${labelFilter}
     }
     first: 50
   ) {
     nodes { ...IssueFields }
   }
 }`,
-  schema: z.object({ issues: z.object({ nodes: z.array(RawIssueSchema) }) }),
-};
+    schema: z.object({ issues: z.object({ nodes: z.array(RawIssueSchema) }) }),
+  };
+}
+
+/** The `assigned`-mode query, kept for callers that do not care about the pick-up setting. */
+export const PickableIssues = pickableIssuesOp();
 
 /**
  * Issues a human has not closed yet whose PR may already be merged: Needs Verification and

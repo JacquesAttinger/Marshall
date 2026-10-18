@@ -4,7 +4,7 @@
 // exits, for a manual check. launchd runs this command (scripts/launchd/); it rotates the logs
 // once at start, writes the pidfile `marshall kill` and `status` read, and ticks the ntfy tailer.
 
-import { loadConfig, loadEnv, requireLinearApiKey } from "../config.ts";
+import { loadConfig, loadEnv, pickupOptions, requireLinearApiKey } from "../config.ts";
 import { openMigratedDb } from "../db/index.ts";
 import { connectLinear } from "../linear/index.ts";
 import { createLogger, type Logger, rotateLog } from "../log.ts";
@@ -71,6 +71,7 @@ export async function runLoop(opts: RunOptions): Promise<void> {
     teamId: config.teamId,
     workspace: config.workspace,
     log,
+    pickup: pickupOptions(config),
   });
   const db = openMigratedDb(dbPath());
   const waiter = createRunWaiter(db);

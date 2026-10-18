@@ -1,9 +1,9 @@
-// Last edited: 2026-09-29 19:05 CDT
+// Last edited: 2026-10-18 13:20 PDT
 // The one module that talks to Linear. Every read or write Marshall makes goes through LinearClient.
 // Claim lock = state In Progress + one `marshall/agent-<slot>` label. `delegate` waits for the
 // iteration 2 OAuth agent, because the API only accepts agent users there.
 
-import { ConfigError } from "../config.ts";
+import { ConfigError, type PickupOptions } from "../config.ts";
 import type { Logger } from "../log.ts";
 import { createGql, type Gql, LinearError, type RateBudget } from "./gql.ts";
 import {
@@ -32,7 +32,7 @@ import {
   CreateRelation,
   IssueById,
   type Operation,
-  PickableIssues,
+  pickableIssuesOp,
   ReviewableIssues,
   type TeamMeta,
   TeamMetaOp,
@@ -88,6 +88,8 @@ export interface ConnectOptions {
   workspace: string;
   log: Logger;
   fetchImpl?: typeof fetch;
+  /** The config's pick-up rule. Unset: `assigned`, every Todo issue assigned to the key's user. */
+  pickup?: PickupOptions;
 }
 
 /** Run one operation. Small wrapper so call sites read as `run(gql, Op, vars)`. */
@@ -121,7 +123,7 @@ export function indexTeam(team: TeamMeta): TeamIndex {
   return { stateIds, labelIds };
 }
 
-function requireSetup(index: TeamIndex): void {
+function requireSetup(index: TeamIndex, pickup?: PickupOptions): void {
   const missing: string[] = [];
   for (const name of [
     TODO_STATE,
@@ -134,6 +136,9 @@ function requireSetup(index: TeamIndex): void {
   }
   for (const name of [AGENT_FILED_LABEL, HUMAN_ONLY_LABEL, ...AGENT_IDS.map(agentLabelName)]) {
     if (!index.labelIds.has(name)) missing.push(`label "${name}"`);
+  }
+  if (pickup?.mode === "labeled" && !index.labelIds.has(pickup.label)) {
+    missing.push(`label "${pickup.label}"`);
   }
   if (missing.length > 0) {
     throw new LinearError(
@@ -151,6 +156,7 @@ interface Ctx {
   log: Logger;
   stateId(name: string): string;
   labelId(name: string): string;
+  pickup: PickupOptions | undefined;
 }
 
 async function comment(ctx: Ctx, issueId: string, markdown: string): Promise<{ id: string }> {
@@ -259,9 +265,12 @@ function buildClient(ctx: Ctx): LinearClient {
     whoami: () => ctx.viewer,
     budget: () => ctx.gql.lastBudget,
     listPickable: async () => {
-      const { issues } = await run(ctx.gql, PickableIssues, {
+      const pickup = ctx.pickup;
+      const { issues } = await run(ctx.gql, pickableIssuesOp(pickup), {
         teamId: ctx.teamId,
         assigneeId: ctx.viewer.userId,
+        ...(pickup?.mode === "labeled" ? { label: pickup.label } : {}),
+        ...(pickup?.projectId ? { projectId: pickup.projectId } : {}),
       });
       return issues.nodes.map(toPickable);
     },
@@ -292,7 +301,7 @@ export async function connectLinear(opts: ConnectOptions): Promise<LinearClient>
   const viewer = await verifyWorkspace(gql, opts.workspace);
   const { team } = await run(gql, TeamMetaOp, { id: opts.teamId });
   const index = indexTeam(team);
-  requireSetup(index);
+  requireSetup(index, opts.pickup);
   const stateId = (name: string): string => {
     const id = index.stateIds.get(name);
     if (!id) throw new LinearError(`Unknown workflow state "${name}"`, UpdateIssue.name);
@@ -307,5 +316,6 @@ export async function connectLinear(opts: ConnectOptions): Promise<LinearClient>
     log: opts.log.child({ team: team.key }),
     stateId,
     labelId,
+    pickup: opts.pickup,
   });
 }

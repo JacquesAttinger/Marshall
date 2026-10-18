@@ -109,6 +109,7 @@ export interface SchedulerDeps {
 export type SkipReason =
   | "paused"
   | "human_only"
+  | "not_queued"
   | "live_claim"
   | "blocked"
   | "caps"

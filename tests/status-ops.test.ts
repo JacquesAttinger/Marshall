@@ -151,6 +151,7 @@ describe("formatOps", () => {
         pausedUntil: null,
         pausedAt: null,
       },
+      pickup: { mode: "assigned", label: "marshall:queued" },
       caps: { maxAgents: 2, dailyStartCap: 6, windowStartCap: 2, windowHours: 5 },
       rows: [],
     };

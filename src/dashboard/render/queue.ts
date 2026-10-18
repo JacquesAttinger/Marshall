@@ -1,4 +1,4 @@
-// Last edited: 2026-10-03 18:34 CDT
+// Last edited: 2026-10-18 13:30 PDT
 // The queue: the pickable issues in pickup order and what the next tick does with each, from the
 // structured status codes (never by parsing the reason text).
 
@@ -26,6 +26,7 @@ const STATUS: Record<QueueStatus, [string, string]> = {
   live: ["live", "status-run"],
   bounce_limit: ["bounce limit", "status-bad"],
   human_only: ["human only", "status-muted"],
+  not_queued: ["not queued", "status-muted"],
 };
 
 function statusText(row: QueueRow, windowFreesAt: string | null, now: Date): string {
@@ -43,11 +44,14 @@ export function renderQueue(queue: QueueData, workspace: string, now: Date): Saf
     queue.error &&
     html`<p class="note note-warn note-section">Linear: ${queue.error}.${queue.report && queue.fetchedAt && html` Showing the list from ${formatClock(queue.fetchedAt, now)}.`}</p>`;
   if (!queue.report) return html`${head}${stale}`;
-  const { rows, counts } = queue.report;
-  if (rows.length === 0) return html`${head}${stale}<p class="empty">Nothing pickable.</p>`;
+  const { rows, counts, pickup } = queue.report;
+  const mode =
+    pickup.mode === "labeled" &&
+    html`<p class="note note-section">Opt-in pick-up: only issues labeled <code>${pickup.label}</code>.</p>`;
+  if (rows.length === 0) return html`${head}${stale}${mode}<p class="empty">Nothing pickable.</p>`;
   const items = rows.map((row) => {
     const [, tone] = STATUS[row.status];
     return html`<li class="q-row"><a class="issue" href="${linearIssueUrl(workspace, row.identifier)}" target="_blank" rel="noopener noreferrer">${row.identifier}</a><span class="q-title">${row.title}</span><span class="q-meta"><span class="prio">${PRIORITY[row.priority] ?? row.priority}</span>${row.kind === "bounce" && html`<span class="badge">bounce #${row.bounces + 1}</span>`}<span class="status ${tone}">${statusText(row, counts.windowFreesAt, now)}</span></span></li>`;
   });
-  return html`${head}${stale}<ol class="queue">${items}</ol>`;
+  return html`${head}${stale}${mode}<ol class="queue">${items}</ol>`;
 }

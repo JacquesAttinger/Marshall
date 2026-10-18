@@ -4,7 +4,7 @@
 // attempted only when the DB exists and a key is set; everything else works offline.
 
 import { existsSync } from "node:fs";
-import { type Config, loadConfig, loadEnv, resolveConfigPath } from "../config.ts";
+import { type Config, loadConfig, loadEnv, pickupOptions, resolveConfigPath } from "../config.ts";
 import { type Counts, counts, openDb, schemaVersion } from "../db/index.ts";
 import { connectLinear } from "../linear/index.ts";
 import { createLogger } from "../log.ts";
@@ -101,6 +101,7 @@ function queueSource(
         teamId: config.teamId,
         workspace: config.workspace,
         log,
+        pickup: pickupOptions(config),
       });
       return collectQueue({ db, config, linear, now });
     },

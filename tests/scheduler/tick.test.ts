@@ -316,6 +316,35 @@ describe("tick: pause and failures", () => {
   });
 });
 
+describe("tick: opt-in pick-up", () => {
+  test("labeled mode skips an issue without the label, never touching Linear or the claim table", async () => {
+    h = makeHarness({
+      config: { pickup: "labeled" },
+      issues: [
+        pickable({ identifier: "CB-1", labels: ["bug"] }),
+        pickable({ identifier: "CB-2", labels: ["marshall:queued"] }),
+      ],
+    });
+    const result = await tick(h.deps);
+    expect(result.decisions[0]).toMatchObject({
+      identifier: "CB-1",
+      action: "skipped",
+      reason: "not_queued",
+    });
+    expect(result.decisions[1]).toMatchObject({ identifier: "CB-2", action: "started" });
+    expect(getClaim(h.db, "issue-1")).toBeNull();
+    expect(h.linear.calls.filter((c) => c.method === "claim").map((c) => c.issueId)).toEqual([
+      "issue-2",
+    ]);
+  });
+
+  test("assigned mode (the default) ignores the label", async () => {
+    h = makeHarness({ issues: [pickable({ identifier: "CB-1", labels: [] })] });
+    const result = await tick(h.deps);
+    expect(result.decisions[0]).toMatchObject({ identifier: "CB-1", action: "started" });
+  });
+});
+
 describe("tick: human-only label", () => {
   test("skips an issue labeled human-only without touching Linear or the claim table", async () => {
     h = makeHarness({

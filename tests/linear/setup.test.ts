@@ -41,6 +41,8 @@ describe("ensureWorkspaceSetup from an empty team", () => {
       "CreateLabel",
       "CreateLabel",
       "CreateLabel",
+      "CreateLabel",
+      "CreateLabel",
     ]);
     expect(fake.callsFor("TeamMeta")).toHaveLength(1);
     expect(result.needsVerification).toEqual({
@@ -51,6 +53,8 @@ describe("ensureWorkspaceSetup from an empty team", () => {
     expect(result.blocked).toEqual({ id: "state-new", name: "Blocked", created: true });
     expect(result.agentFiled.created).toBe(true);
     expect(result.humanOnly.created).toBe(true);
+    expect(result.queued).toMatchObject({ name: "marshall:queued", created: true });
+    expect(result.hasPlan).toMatchObject({ name: "marshall:has-plan", created: true });
     expect(result.marshallGroup).toEqual({
       id: "label-new-marshall",
       name: "marshall",
@@ -87,9 +91,11 @@ describe("ensureWorkspaceSetup from an empty team", () => {
       .map((c) => (c.variables as { input: unknown }).input);
     expect(labelInputs[0]).toEqual({ teamId: IDS.team, name: "agent-filed" });
     expect(labelInputs[1]).toEqual({ teamId: IDS.team, name: "human-only" });
-    expect(labelInputs[2]).toEqual({ teamId: IDS.team, name: "marshall", isGroup: true });
+    expect(labelInputs[2]).toEqual({ teamId: IDS.team, name: "marshall:queued" });
+    expect(labelInputs[3]).toEqual({ teamId: IDS.team, name: "marshall:has-plan" });
+    expect(labelInputs[4]).toEqual({ teamId: IDS.team, name: "marshall", isGroup: true });
     for (const [i, slot] of ["agent-0", "agent-1", "agent-2"].entries()) {
-      expect(labelInputs[3 + i]).toEqual({
+      expect(labelInputs[5 + i]).toEqual({
         teamId: IDS.team,
         name: slot,
         parentId: "label-new-marshall",

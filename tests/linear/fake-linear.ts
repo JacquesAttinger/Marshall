@@ -34,6 +34,8 @@ export const IDS = {
   done: "state-done",
   agentFiled: "label-agent-filed",
   humanOnly: "label-human-only",
+  queued: "label-queued",
+  hasPlan: "label-has-plan",
   marshall: "label-marshall",
   agent0: "label-agent-0",
   agent1: "label-agent-1",
@@ -71,6 +73,8 @@ export const fullTeamData = (): { team: TeamMeta } => ({
       nodes: [
         { id: IDS.agentFiled, name: "agent-filed", isGroup: false, parent: null },
         { id: IDS.humanOnly, name: "human-only", isGroup: false, parent: null },
+        { id: IDS.queued, name: "marshall:queued", isGroup: false, parent: null },
+        { id: IDS.hasPlan, name: "marshall:has-plan", isGroup: false, parent: null },
         { id: IDS.marshall, name: "marshall", isGroup: true, parent: null },
         {
           id: IDS.agent0,

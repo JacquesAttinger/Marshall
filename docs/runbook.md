@@ -137,6 +137,16 @@ Use it on issues important enough to need a human doing the planning and impleme
 Remove the label to make the issue pickable again.
 It does nothing to an issue Marshall has already claimed — add it before the claim, not after.
 
+## Keeping Marshall to opted-in issues
+
+A project can take only the issues you opt in.
+Set `"pickup": "labeled"` in its config and Marshall starts an issue only when it carries the label in `pickupLabel` (default `marshall:queued`), on top of the usual rules (Todo, assigned to you, not `human-only`).
+`"pickup": "assigned"` is the default: every Todo issue assigned to you.
+`linearProjectId` narrows either mode to one Linear project.
+`marshall linear setup` creates `marshall:queued` and `marshall:has-plan`, and a labeled project refuses to start without its label.
+`marshall queue` prints the mode, and marks an issue that lacks the label `not_queued`.
+The Hemut setup, repos and queue are in [`docs/hemut_runbook.md`](hemut_runbook.md).
+
 ## Reading it
 
 `marshall status` prints, after the config and DB summary:

@@ -1,12 +1,22 @@
 # Planning phase — how it works
 
-<!-- Last edited: 2026-10-12 18:02 PDT -->
+<!-- Last edited: 2026-10-18 21:30 PDT -->
 
 **TLDR:** Marshall turns a claimed Linear issue into a committed plan file with no human in the loop.
 A cheap Haiku call says "trivial", "simple" or "complex", which picks Sonnet, Opus or Fable.
 The orchestrator writes a brief file, launches a `/marshall:plan` agent in the worktree, and the agent writes and commits `docs/<topic>_plan.md`.
 After the run, git proves the agent changed nothing else, the headings are checked, and the plan's TLDR is posted to Linear.
 The agent never talks to Linear.
+
+## Skipping the planner: plan intake
+
+An issue that carries a finished plan never reaches this phase.
+`marshall enqueue <plan-file>` files a Todo issue with the plan as its body and the labels `marshall:queued` and `marshall:has-plan`.
+When the master agent sees `marshall:has-plan` on a fresh claim, it runs `runPlanIntake` (`src/plan/intake.ts`) instead of the classifier and the planner.
+Intake checks the plan, writes it to `docs/<title>_plan.md` in the worktree, commits it as the first commit, and posts the plan's TLDR to Linear.
+The check is looser than the planner's template: the H2 sections `TLDR`, `Plan` and `Verification`, in that order, at most 60,000 characters, and an optional `## Repos touched` list (see `docs/hemut_runbook.md`).
+A plan that fails the check blocks the issue with the reason in a Linear comment; it is not retried, because a retry reads the same text.
+A bounce is different: with `bounces > 0` the claim runs in revise mode, so the planner revises the plan from the human's comment.
 
 ## The one call
 

@@ -1,4 +1,4 @@
-<!-- Last edited: 2026-10-18 12:44 PDT -->
+<!-- Last edited: 2026-10-18 21:20 PDT -->
 
 # Plan: Overnight plan queue for the Hemut repos
 
@@ -248,3 +248,36 @@ It is near the 500-line limit, so split it before you add the plan-intake branch
 5. Phase 5: a test agent that runs `gh pr merge` is blocked, and the event appears in the log.
 6. Phase 6: the dry-run PR passes the Hemut policy list by hand, line by line, and has a green CI run.
 7. After the first cross-repo night, check the morning dashboard from your phone, then read one hand-off in full.
+
+## What shipped, and where it differs from this plan
+
+Phases 1 to 5 are built, with tests.
+Phase 6 is the one-time VM setup and rollout; `docs/hemut_runbook.md` is its checklist.
+These points differ from the text above:
+
+- **Plan in the issue body only.**
+  `marshall enqueue` puts the plan in the issue description and refuses a plan over 60,000 characters.
+  The attached Linear document for long plans is not built.
+- **No `--repo` flag on `enqueue`.**
+  The plan's `## Repos touched` section names the repos.
+  `enqueue --dry-run` checks the plan and writes nothing.
+- **The plan file is committed in the primary repo's worktree only.**
+  Sibling PRs do not carry the plan.
+- **Siblings are not auto-rebased.**
+  The rebase pulse still works on the primary PR.
+  Merge detection reads every PR of the claim: the issue is Done only when all of them merged, and a PR closed without a merge releases the claim.
+- **Config key.**
+  The skill choice is `implementSkill` (`"implement"` or `"implement-hemut"`), not `skills.implement`.
+- **Guard hook.**
+  `scripts/merge-guard.ts` also denies `gh pr review --approve`.
+  A live agent run confirmed that the hook blocks `gh pr merge` under `bypassPermissions`.
+  The `permissions.deny` rules in `agent-settings.json` were not tested on their own.
+- **Repos in the Hemut config.**
+  Only five repos are listed (`Command`, `DB-Migrations`, `QuoteFlow_Backend`, `RFP-Module`, `tracking_backend`).
+  Their `staging` rulesets need one approving review.
+  `EDI-Hub` and `Hemut-MCP` use classic protection that a non-admin cannot read.
+  `zones` and `hemut-dashboard` have no `staging` branch.
+  Check each one again before you add it.
+- **`teamId` is a placeholder** in `marshall.hemut.config.json`.
+  A test pins that it stays a placeholder until you replace it.
+

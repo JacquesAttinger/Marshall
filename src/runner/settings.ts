@@ -1,4 +1,4 @@
-// Last edited: 2026-09-20 12:35 CDT
+// Last edited: 2026-10-18 20:20 PDT
 // Builds the inline `--settings` JSON for one agent run: the committed agent-settings.json
 // plus a command hook per lifecycle event that appends to this run's events file.
 
@@ -9,6 +9,7 @@ import { eventsDir } from "../paths.ts";
 const REPO_ROOT = resolve(import.meta.dir, "..", "..");
 export const AGENT_SETTINGS_PATH = resolve(REPO_ROOT, "agent-settings.json");
 export const HOOK_SINK_PATH = resolve(REPO_ROOT, "scripts", "hook-sink.sh");
+export const MERGE_GUARD_PATH = resolve(REPO_ROOT, "scripts", "merge-guard.ts");
 
 /** Every hook event the runner listens to. SessionStart gives the session id first. */
 export const HOOK_EVENTS = [
@@ -83,6 +84,19 @@ export function buildAgentSettings(
     };
     hooks[name] = [...(existing[name] ?? []), group];
   }
+  // The merge guard: a PreToolUse hook on Bash that denies merges, approvals, and pushes to a
+  // protected branch. It sits beside the deny rules in agent-settings.json as a second lock.
+  const guard: HookGroup = {
+    matcher: "Bash",
+    hooks: [
+      {
+        type: "command",
+        command: `bun ${shellQuote(MERGE_GUARD_PATH)} ${shellQuote(eventsFile(runId))}`,
+        timeout: 5,
+      },
+    ],
+  };
+  hooks.PreToolUse = [...(existing.PreToolUse ?? []), guard];
   const baseEnv = (base.env ?? {}) as Record<string, string>;
   return JSON.stringify({ ...base, hooks, env: { ...baseEnv, ...(extras.env ?? {}) } });
 }

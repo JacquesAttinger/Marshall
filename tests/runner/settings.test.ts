@@ -40,7 +40,8 @@ describe("buildAgentSettings", () => {
 
   test("output parses and carries the six hook events", () => {
     const settings = parse(buildAgentSettings("run-1"));
-    expect(Object.keys(settings.hooks).sort()).toEqual([...HOOK_EVENTS].sort());
+    // The six lifecycle events, plus the PreToolUse merge guard.
+    expect(Object.keys(settings.hooks).sort()).toEqual([...HOOK_EVENTS, "PreToolUse"].sort());
   });
 
   test("every hook command names the sink and this run's events file", () => {

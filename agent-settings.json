@@ -3,5 +3,8 @@
   "preferredNotifChannel": "notifications_disabled",
   "includeCoAuthoredBy": false,
   "env": { "ANTHROPIC_DEFAULT_FABLE_MODEL": "claude-fable-5[1m]" },
-  "effortLevel": "high"
+  "effortLevel": "high",
+  "permissions": {
+    "deny": ["Bash(gh pr merge:*)", "Bash(gh pr merge *)"]
+  }
 }

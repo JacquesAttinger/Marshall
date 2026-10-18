@@ -48,7 +48,7 @@ The slot rule is the partial index `claims_live_slot` (migration 004): every sta
 
 | Entry | Called by | What the driver does |
 |---|---|---|
-| `start` | the scheduler after a claim and a worktree | fresh: plan from scratch. Bounce (`bounces > 0`): plan in revise mode with the stored model and plan path, then implement on the same branch with `implement.json` reset to a resume point so the PR is reused, then a new hand-off round. |
+| `start` | the scheduler after a claim and a worktree | fresh: plan from scratch, or, for an issue labeled `marshall:has-plan`, commit the plan from the issue body and skip the planner (`docs/planning.md`). Bounce (`bounces > 0`): plan in revise mode with the stored model and plan path, then implement on the same branch with `implement.json` reset to a resume point so the PR is reused, then a new hand-off round. |
 | `resume` | reconcile, for a claim whose agent died, after counting the resume | implementing: kill the dead run's row, continue its session. planning / handoff: run the phase again. |
 | `attach` | reconcile, for a claim it kept (agent alive, or parked) | planning / implementing / handoff: wait on the live run (`attachRunId`) instead of launching another. `rate_limited`: pause again from the recorded reset time. `awaiting_human` / `rebasing` / `resolving`: nothing to build; the pulse owns them from the table. |
 
@@ -80,6 +80,7 @@ Step 09 maps `finished`, `blocked`, `over_budget`, `crashed`, `rate_limited`, `r
 
 | Event | When | Payload |
 |---|---|---|
+| `plan_intake` | a has-plan issue's plan was committed in place of a planner run | `planPath`, `repos` (count listed) |
 | `phase_changed` | every state write | `from`, `to`, plus the transition's detail (`mode`, `until`, `badge`, `slot`, ...) |
 | `finished` | the hand-off is posted and the issue is in Needs Verification | `prUrl`, `handoffPath`, `round`, `followups` (count filed) |
 | `followup_filed` | one per follow-up issue created, so a bounce never files a title twice | `title`, `identifier`, `url` |
@@ -91,7 +92,7 @@ Step 09 maps `finished`, `blocked`, `over_budget`, `crashed`, `rate_limited`, `r
 | `fresh_restart` | the branch was reset to the plan commit and the phase relaunched | `phase`, `why`, `resetTo` |
 | `rate_limited` | a run ended with `StopFailure rate_limit` | `until`, `parsed` (true when "Resets at" was read), `details` |
 | `rate_limit_resumed` | the pause ended and the phase probed | — |
-| `pr_merged`, `pr_closed` | the merge poll saw it | `prUrl` |
+| `pr_merged`, `pr_closed` | the merge poll saw it; a multi-repo claim is merged only when every repo's PR merged, and closed when any PR closed unmerged | `prUrl` |
 | `done` | the issue was set to Done after its PR merged | `prUrl`, `source: merge_poll \| sweep` |
 | `rebase_queued` | a sibling merged, or GitHub reports the PR as conflicting | `after`, `why` (conflict case) |
 | `rebased` | the rebased PR is green and re-posted | `badge`, `posted`, `requeued` |

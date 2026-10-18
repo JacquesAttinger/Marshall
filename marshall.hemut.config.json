@@ -1,0 +1,81 @@
+// Last edited: 2026-10-18 20:50 PDT
+// Marshall's settings for the Hemut workspace (docs/hemut_runbook.md). Run it on the always-on VM:
+// register it with `marshall project import --name hemut marshall.hemut.config.json`, or point
+// MARSHALL_CONFIG at it. Comments are allowed (JSONC); secrets go in .env, not in this file.
+// Policy this file encodes: ~/code/hemut3/CLAUDE.md. PRs go into each repo's `staging`, and
+// Marshall never merges: the GitHub ruleset needs a human approval, and the agents have a guard.
+{
+  // --- Where the work comes from ---
+  // Linear workspace slug (linear.app/hemut/...). The key in .env must belong to it.
+  "workspace": "hemut",
+  // Team Andrew1 (issue keys AND-*). Fill in the team's id (`marshall linear setup` prints the team
+  // it was given; the id is in Linear's team settings URL or its API).
+  "teamId": "REPLACE-WITH-TEAM-ANDREW1-ID",
+  // Opt-in pick-up: only issues carrying `marshall:queued` are taken. Without this, every Todo
+  // issue assigned to the key's user would start (AND-2259 and the rest of the real backlog).
+  "pickup": "labeled",
+  "pickupLabel": "marshall:queued",
+
+  // --- Where it lands: one entry per repo a plan may touch ---
+  // The first repo is the default for an issue whose plan lists none. A plan names its repos in a
+  // `## Repos touched` section (`- Command: primary`, `- DB-Migrations: sibling`).
+  // Only repos whose `staging` ruleset needs an approving review are listed (checked 2026-10-18 with
+  // `gh api repos/Hemut2025/<repo>/rules/branches/staging`). Check a repo again before you add it:
+  // EDI-Hub and Hemut-MCP use classic protection that a non-admin cannot read; zones and
+  // hemut-dashboard have no `staging` branch.
+  "repos": [
+    { "slug": "Command", "repoPath": "~/code/hemut3/Command", "baseBranch": "staging" },
+    { "slug": "DB-Migrations", "repoPath": "~/code/hemut3/DB-Migrations", "baseBranch": "staging" },
+    {
+      "slug": "QuoteFlow_Backend",
+      "repoPath": "~/code/hemut3/QuoteFlow_Backend",
+      "baseBranch": "staging"
+    },
+    { "slug": "RFP-Module", "repoPath": "~/code/hemut3/RFP-Module", "baseBranch": "staging" },
+    {
+      "slug": "tracking_backend",
+      "repoPath": "~/code/hemut3/tracking_backend",
+      "baseBranch": "staging"
+    }
+  ],
+  // The Hemut implementer: policy rules, one PR per repo, never merges.
+  "implementSkill": "implement-hemut",
+
+  // --- How many agents, and how often they may start (start low; raise after a clean week) ---
+  "maxAgents": 2,
+  "dailyStartCap": 4,
+  "windowStartCap": 4,
+  "windowHours": 5,
+  "pollSeconds": 45,
+
+  // --- When to give up. Plans that fan out sub-agents run long and go quiet while they wait ---
+  // An agent with no transcript write or hook event for this long counts as stalled.
+  "stallMinutes": 30,
+  // Total wall clock for one issue, from claim to hand-off.
+  "issueTimeoutHours": 6,
+  "maxFixCycles": 4,
+  "maxBounces": 3,
+  "maxResumes": 2,
+  "planMinutes": 20,
+  "handoffMinutes": 15,
+  "doneSweepMinutes": 10,
+  "rateLimitProbeMinutes": 30,
+  "fileFollowUps": false,
+
+  // --- Models ---
+  "models": {
+    "classifier": "haiku",
+    "planTrivial": "sonnet",
+    "planSimple": "opus",
+    "planComplex": "fable",
+    "handoff": "opus",
+    "implement": "opus"
+  },
+
+  // --- Compose ports ---
+  // Fill in each repo's published host ports once, as marshall.vm.config.json does for ChessBuddy
+  // (`services` at the top level, or a `services` map inside a repo entry). The VM's .env files hold
+  // local and dev values only: no AWS credentials and no production keys.
+  "portOffsetPerSlot": 100,
+  "dashboardPort": 7474
+}

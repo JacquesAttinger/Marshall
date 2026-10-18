@@ -1,4 +1,4 @@
-// Last edited: 2026-09-20 23:55 CDT
+// Last edited: 2026-10-18 19:40 PDT
 // Names the phases and the plugin skills agree on: run names (`<ID> <phase>`, what the master
 // agent looks up after a restart), the prompts, and the planner's revision commit subject.
 
@@ -13,8 +13,15 @@ export function PLAN_REVISION_SUBJECT(revision: number): string {
   return `Plan: revision ${revision}`;
 }
 
-export function implementPrompt(planPath: string, identifier: string): string {
-  return `/marshall:implement ${planPath} ${identifier}`;
+/** The plugin skill that implements a plan: `implement`, or `implement-hemut` (config.implementSkill). */
+export type ImplementSkill = "implement" | "implement-hemut";
+
+export function implementPrompt(
+  planPath: string,
+  identifier: string,
+  skill: ImplementSkill = "implement",
+): string {
+  return `/marshall:${skill} ${planPath} ${identifier}`;
 }
 
 export const RESOLVE_STATUS_FILE = "resolve.json";
@@ -28,6 +35,12 @@ export function resolvePrompt(
 }
 
 /** The nudge a resumed implement session gets; the skill's preflight reads implement.json. */
-export const IMPLEMENT_RESUME_PROMPT =
-  "Your session was interrupted. Read $MARSHALL_ISSUE_DIR/implement.json and continue " +
-  "/marshall:implement from the phase it records. The PR, if any, is reused, never recreated.";
+export function implementResumePrompt(skill: ImplementSkill = "implement"): string {
+  return (
+    "Your session was interrupted. Read $MARSHALL_ISSUE_DIR/implement.json and continue " +
+    `/marshall:${skill} from the phase it records. The PR, if any, is reused, never recreated.`
+  );
+}
+
+/** The resume nudge for the default skill. */
+export const IMPLEMENT_RESUME_PROMPT = implementResumePrompt();

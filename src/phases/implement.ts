@@ -21,7 +21,7 @@ import {
   setRepoPr,
   siblingDirArgs,
 } from "../scheduler/index.ts";
-import { IMPLEMENT_RESUME_PROMPT, implementPrompt, runName } from "./names.ts";
+import { implementPrompt, implementResumePrompt, runName } from "./names.ts";
 import { prepareBounceStatus, readImplementOutcome } from "./status.ts";
 
 /** Outcomes the skill reports honestly; none of them gets a retry. */
@@ -54,7 +54,7 @@ async function launchFresh(agent: MasterAgent): Promise<Run> {
   return agent.deps.runner.launch(agent.deps.db, {
     ...launchOpts(agent),
     model: implementModel(agent.deps.config),
-    prompt: implementPrompt(planPath, agent.identifier),
+    prompt: implementPrompt(planPath, agent.identifier, agent.deps.config.implementSkill),
   });
 }
 
@@ -65,7 +65,7 @@ async function continueRun(agent: MasterAgent, run: Run): Promise<Run> {
   return agent.deps.runner.resume(agent.deps.db, {
     ...launchOpts(agent),
     sessionId,
-    prompt: IMPLEMENT_RESUME_PROMPT,
+    prompt: implementResumePrompt(agent.deps.config.implementSkill),
   });
 }
 

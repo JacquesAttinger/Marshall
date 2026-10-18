@@ -68,4 +68,14 @@ describe("implement phase, multi-repo", () => {
       ["Command", PR_PRIMARY],
     ]);
   });
+
+  test("implementSkill implement-hemut launches the Hemut skill", async () => {
+    h = makeMasterHarness({ config: { implementSkill: "implement-hemut" } });
+    const issue = registerIssue(h, "CB-1");
+    await h.hooks.start(claimFor(h, issue), issue);
+    await until(() => h.runner.launches.length >= 1, 2000, "implement launch");
+    expect(h.runner.launches[0]?.opts.prompt).toBe(
+      "/marshall:implement-hemut docs/fix-castling_plan.md CB-1",
+    );
+  });
 });

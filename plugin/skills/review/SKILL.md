@@ -4,12 +4,14 @@ description: Review the current branch's diff against the base branch ($MARSHALL
 argument-hint: <plan-path>
 ---
 
-<!-- Last edited: 2026-09-22 12:44 CDT -->
+<!-- Last edited: 2026-10-18 19:30 PDT -->
 
 Review the diff between the base branch and `HEAD` on two axes and report three lists.
 The base branch is `origin/$MARSHALL_BASE_BRANCH`, or `origin/main` when that var is unset (a run by hand); `<base-ref>` below means that ref.
 `/marshall:implement` fixes the two BLOCKING lists and carries NOTES into the hand-off.
 `$ARGUMENTS` is the plan file path, relative to the repo root.
+When `MARSHALL_REPOS_JSON` is set (a plan that touches several repos), review every repo in it: sections 1 to 3 run once per entry, with `git -C <dir>` and that entry's `base` in place of `$MARSHALL_BASE_BRANCH`, and the report lists each finding with its repo slug.
+The plan file is in the worktree you run in (the primary repo); the Spec pass in every repo checks against it.
 
 ## 1. Pin the diff
 
@@ -27,6 +29,7 @@ Both cases are the caller's problem, not a finding.
 ## 2. Bug hunt (built-in `/code-review`)
 
 Invoke the `Skill` tool with `skill: "code-review"` and `args: "high <base-ref>...HEAD"`.
+For each sibling repo in `MARSHALL_REPOS_JSON`, spawn one `general-purpose` sub-agent instead, with this brief: `cd <dir>`, then invoke the `Skill` tool with `skill: "code-review"` and `args: "high origin/<base>...HEAD"`, then report every finding as `<slug>:file:line - summary (verdict)`. It must not edit any file.
 It reads every hunk, verifies each candidate, and reports findings with a verdict of `CONFIRMED` or `PLAUSIBLE`.
 Do not pass `--fix`; the caller decides what to fix.
 Collect every finding as `file:line - summary (verdict)`.

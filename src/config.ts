@@ -79,6 +79,11 @@ const ConfigObjectSchema = z
     pickupLabel: z.string().min(1).default("marshall:queued"),
     /** Optional Linear project (a grouping inside the team) that narrows the pick-up further. */
     linearProjectId: z.string().min(1).optional(),
+    /**
+     * Which plugin skill implements a plan: `implement`, or `implement-hemut` (Hemut policy, one PR
+     * per repo, never merges). The resolver and the hand-off writer do not change.
+     */
+    implementSkill: z.enum(["implement", "implement-hemut"]).default("implement"),
     maxAgents: z.number().int().min(1).max(3).default(2),
     dailyStartCap: positiveInt.default(6),
     windowStartCap: positiveInt.default(2),

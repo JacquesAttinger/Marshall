@@ -10,7 +10,14 @@ const PLUGIN_ROOT = resolve(import.meta.dir, "..", "plugin");
 const SKILLS_DIR = join(PLUGIN_ROOT, "skills");
 
 /** The skills the rest of Marshall refers to by name. Add here when a step adds one. */
-const REQUIRED_SKILLS = ["plan", "implement", "review", "handoff", "resolve-conflicts"];
+const REQUIRED_SKILLS = [
+  "plan",
+  "implement",
+  "implement-hemut",
+  "review",
+  "handoff",
+  "resolve-conflicts",
+];
 
 function frontmatter(path: string): Record<string, string> {
   const text = readFileSync(path, "utf8");

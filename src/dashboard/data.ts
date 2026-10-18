@@ -35,6 +35,7 @@ import {
   liveClaims,
   REBASING,
 } from "../scheduler/index.ts";
+import { siblingRepos } from "../scheduler/repos.ts";
 import { getFlag } from "../scheduler/store.ts";
 import { blockReason } from "./block-reason.ts";
 
@@ -99,6 +100,8 @@ export interface NeedsYouCard {
   url: string;
   state: string;
   prUrl: string | null;
+  /** The PRs in the other repos of a multi-repo claim, in merge order. Empty for one repo. */
+  otherPrs: { repo: string; url: string }[];
   updatedAt: string;
   tldr: string | null;
   round: number | null;
@@ -249,6 +252,9 @@ function needsYouCard(deps: CollectDeps, claim: Claim): NeedsYouCard {
     url: linearIssueUrl(deps.config.workspace, identifier),
     state: claim.state,
     prUrl: claim.prUrl,
+    otherPrs: siblingRepos(deps.db, claim.issueId).flatMap((r) =>
+      r.prUrl ? [{ repo: r.slug, url: r.prUrl }] : [],
+    ),
     updatedAt: claim.updatedAt,
     tldr: awaiting ? handoffTldr(identifier) : null,
     round: awaiting ? attempt(() => readHandoffMeta(identifier)?.round ?? null, null) : null,

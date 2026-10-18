@@ -96,7 +96,8 @@ export async function runEnqueue(opts: EnqueueOptions): Promise<number> {
         pickup: pickupOptions(config),
       });
   try {
-    const report = await enqueuePlan({ text, linear, dryRun: opts.dryRun });
+    const knownRepos = config.repos.map((r) => r.slug);
+    const report = await enqueuePlan({ text, linear, dryRun: opts.dryRun, knownRepos });
     console.log(opts.json ? JSON.stringify(report, null, 2) : formatEnqueue(report));
     return 0;
   } catch (err) {

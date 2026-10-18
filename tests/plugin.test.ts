@@ -63,7 +63,8 @@ describe("skills", () => {
   test("implement quotes every implement.json field the schema requires", async () => {
     const { ImplementStatusSchema } = await import("../src/implement/status.ts");
     const text = readFileSync(join(SKILLS_DIR, "implement", "SKILL.md"), "utf8");
-    for (const key of Object.keys(ImplementStatusSchema.shape)) {
+    for (const [key, field] of Object.entries(ImplementStatusSchema.shape)) {
+      if (field.safeParse(undefined).success) continue; // optional fields (`prs`) need no quote
       expect(text).toContain(`"${key}"`);
     }
   });

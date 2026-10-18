@@ -13,7 +13,14 @@ import { IMPLEMENTING, OVER_BUDGET, STALLED } from "../master/types.ts";
 import { PLUGIN_DIR } from "../plan/index.ts";
 import { terminalOf } from "../plan/wait.ts";
 import { getRun, type Run, type Terminal } from "../runner/index.ts";
-import { bumpFreshRestarts, bumpResumes } from "../scheduler/index.ts";
+import {
+  bumpFreshRestarts,
+  bumpResumes,
+  claimRepos,
+  clearRepoPrs,
+  setRepoPr,
+  siblingDirArgs,
+} from "../scheduler/index.ts";
 import { IMPLEMENT_RESUME_PROMPT, implementPrompt, runName } from "./names.ts";
 import { prepareBounceStatus, readImplementOutcome } from "./status.ts";
 
@@ -30,8 +37,14 @@ function launchOpts(agent: MasterAgent) {
     name: runName(agent.identifier, "implement"),
     cwd: agent.cwd,
     effort: "high" as const,
-    extraArgs: ["--plugin-dir", PLUGIN_DIR],
-    env: implementEnv(agent.identifier, issue.url, claim.slot, deps.config),
+    extraArgs: ["--plugin-dir", PLUGIN_DIR, ...siblingDirArgs(deps.db, claim.issueId)],
+    env: implementEnv(
+      agent.identifier,
+      issue.url,
+      claim.slot,
+      deps.config,
+      claimRepos(deps.db, claim.issueId),
+    ),
     statusFile: implementStatusPath(agent.identifier),
   };
 }
@@ -92,6 +105,7 @@ async function recover(agent: MasterAgent, run: Run, why: string): Promise<Run |
     planPath: claim.planPath as string,
   });
   agent.patch({ prUrl: null });
+  clearRepoPrs(deps.db, claim.issueId);
   agent.claim = bumpFreshRestarts(deps.db, claim.issueId, agent.now().toISOString());
   agent.emit("fresh_restart", { phase: IMPLEMENTING, why, resetTo: target });
   return launchFresh(agent);
@@ -103,6 +117,7 @@ async function finished(agent: MasterAgent): Promise<boolean | "retry"> {
   if (!read.ok) return "retry";
   const { status, outcome } = read;
   agent.patch({ prUrl: status.prUrl });
+  for (const pr of status.prs ?? []) setRepoPr(agent.deps.db, agent.claim.issueId, pr.repo, pr.url);
   if (outcome === "pr_green") return true;
   const because = GIVE_UP_COMMENTS[outcome] ?? outcome;
   const detail = status.reason ? `: ${status.reason}` : "";

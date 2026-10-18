@@ -9,6 +9,7 @@ import type { MasterAgent } from "../master/agent.ts";
 import { PLANNING } from "../master/types.ts";
 import type { PlanPhaseInput, PlanPhaseResult } from "../plan/index.ts";
 import { terminalOf } from "../plan/wait.ts";
+import { claimBase } from "../scheduler/index.ts";
 import { PLAN_REVISION_SUBJECT } from "./names.ts";
 
 /**
@@ -16,8 +17,8 @@ import { PLAN_REVISION_SUBJECT } from "./names.ts";
  * unless the newest commit is the planner's own revision commit, which is dropped.
  */
 export async function planningBase(agent: MasterAgent, mode: "fresh" | "revise"): Promise<string> {
-  const { git, config } = agent.deps;
-  if (mode === "fresh") return `origin/${config.baseBranch}`;
+  const { git, config, db } = agent.deps;
+  if (mode === "fresh") return `origin/${claimBase(db, config, agent.claim.issueId)}`;
   const head = await git.head(agent.cwd);
   const subject = await git.subject(agent.cwd, head);
   return subject === PLAN_REVISION_SUBJECT(agent.claim.bounces) ? `${head}~1` : head;
@@ -32,6 +33,7 @@ function planInput(agent: MasterAgent, mode: "fresh" | "revise", attachRunId?: s
     issue,
     cwd: agent.cwd,
     mode,
+    base: `origin/${claimBase(deps.db, deps.config, claim.issueId)}`,
     waiter: deps.waiter,
     onLaunched: (run) => agent.watch(run.runId),
   };

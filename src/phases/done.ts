@@ -1,4 +1,4 @@
-// Last edited: 2026-09-29 19:05 CDT
+// Last edited: 2026-10-18 17:15 PDT
 // Moves an issue to Done when its PR merges, by two paths. The merge poll (`rebase.ts`) calls
 // `markDone` the moment it sees a parked PR merge. `sweepDone` catches the merges that poll
 // missed (Marshall was off, or the claim was reused for a re-run): every `doneSweepMinutes` it
@@ -64,7 +64,11 @@ export async function sweepDone(deps: MasterDeps): Promise<void> {
   for (const issue of candidates) {
     if (hasActiveClaim(deps, issue.id)) continue;
     try {
-      const prs = await findPrsFor(deps.gh, issue.identifier, deps.config.repoPath);
+      // One search per configured repo: a multi-repo issue has a PR in each.
+      const found = await Promise.all(
+        deps.config.repos.map((r) => findPrsFor(deps.gh, issue.identifier, r.repoPath)),
+      );
+      const prs = found.flat();
       const merged = mergedPrOf(prs);
       if (merged) await markDone(deps, issue, merged.url, merged.mergedAt, "sweep");
     } catch (err) {

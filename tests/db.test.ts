@@ -98,16 +98,17 @@ describe("migrate", () => {
       "003_flags.sql",
       "004_master.sql",
       "005_claim_title.sql",
+      "006_claim_repos.sql",
     ]);
-    expect(tables(db)).toEqual(["claims", "events", "flags", "runs", "starts"]);
-    expect(schemaVersion(db)).toBe(5);
+    expect(tables(db)).toEqual(["claim_repos", "claims", "events", "flags", "runs", "starts"]);
+    expect(schemaVersion(db)).toBe(6);
     expect(counts(db)).toEqual({ claims: 0, starts: 0, events: 0, runs: 0 });
   });
 
   test("second migrate applies nothing", () => {
     migrate(db);
     expect(migrate(db)).toHaveLength(0);
-    expect(schemaVersion(db)).toBe(5);
+    expect(schemaVersion(db)).toBe(6);
   });
 
   test("listMigrations is sorted by number", () => {

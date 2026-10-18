@@ -23,15 +23,19 @@ import { latestRunNamed, type Run } from "../runner/index.ts";
 import {
   AWAITING_HUMAN,
   type Claim,
+  claimBase,
+  claimRepos,
   claimsInStates,
   getClaim,
   lowestFreeSlot,
   patchClaim,
   REBASING,
   RELEASED,
+  siblingDirArgs,
 } from "../scheduler/index.ts";
 import { blockIssue } from "../scheduler/tick.ts";
 import { markDone } from "./done.ts";
+import { verdictOf, viewSiblingPrs } from "./multi.ts";
 import { RESOLVE_STATUS_FILE, resolvePrompt, runName } from "./names.ts";
 import { CI_REGISTER_GRACE_MS, type PrView, viewPr } from "./pr.ts";
 
@@ -100,7 +104,7 @@ function queueConflicting(deps: MasterDeps, claim: Claim, view: PrView): void {
   if (claim.state !== AWAITING_HUMAN || claim.rebaseAfter) return;
   if (view.state !== "OPEN" || view.mergeable !== "conflicting") return;
   if (deps.now().getTime() - Date.parse(claim.updatedAt) < CI_REGISTER_GRACE_MS) return;
-  const after = `${deps.config.baseBranch} (merge conflict)`;
+  const after = `${claimBase(deps.db, deps.config, claim.issueId)} (merge conflict)`;
   const queued = patchClaim(
     deps.db,
     claim.issueId,
@@ -123,12 +127,13 @@ async function pollMerges(deps: MasterDeps): Promise<void> {
         claim.updatedAt,
         deps.now(),
       );
-      if (view.mergedAt || view.state === "MERGED") {
+      const verdict = verdictOf(view, await viewSiblingPrs(deps, claim));
+      if (verdict === "merged") {
         await release(ctx, "pr_merged", view.mergedAt);
         queueSiblings(deps, claim.prUrl as string, claim.issueId);
-      } else if (view.state === "CLOSED") {
+      } else if (verdict === "closed") {
         await release(ctx, "pr_closed");
-      } else {
+      } else if (verdict === "open") {
         queueConflicting(deps, claim, view);
       }
     } catch (err) {
@@ -235,8 +240,14 @@ async function startResolver(ctx: Ctx, mode: "conflict" | "ci"): Promise<boolean
       model: implementModel(ctx.config),
       effort: "high",
       prompt: resolvePrompt(ctx.claim.planPath as string, ctx.identifier, mode),
-      extraArgs: ["--plugin-dir", PLUGIN_DIR],
-      env: implementEnv(ctx.identifier, issueUrl, slot, ctx.config),
+      extraArgs: ["--plugin-dir", PLUGIN_DIR, ...siblingDirArgs(ctx.db, ctx.claim.issueId)],
+      env: implementEnv(
+        ctx.identifier,
+        issueUrl,
+        slot,
+        ctx.config,
+        claimRepos(ctx.db, ctx.claim.issueId),
+      ),
       statusFile: resolveStatusPath(ctx.identifier),
     });
   } catch (err) {
@@ -354,7 +365,7 @@ async function startNextRebase(deps: MasterDeps): Promise<void> {
   if (!ctx) return;
   const cwd = cwdOf(ctx);
   await ctx.git.fetch(cwd);
-  const clean = await ctx.git.rebase(cwd, ctx.config.baseBranch);
+  const clean = await ctx.git.rebase(cwd, claimBase(ctx.db, ctx.config, ctx.claim.issueId));
   if (clean) {
     await ctx.git.forcePush(cwd);
     inflightFor.set(ctx.claim.issueId, ctx.claim.rebaseAfter as string);

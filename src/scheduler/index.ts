@@ -11,6 +11,16 @@ import type { Claim, Liveness, MasterAgentHooks, SchedulerDeps } from "./types.t
 
 export { reconcile } from "./reconcile.ts";
 export {
+  type ClaimRepo,
+  claimBase,
+  claimRepos,
+  clearRepoPrs,
+  setClaimRepos,
+  setRepoPr,
+  siblingDirArgs,
+  siblingRepos,
+} from "./repos.ts";
+export {
   bumpFreshRestarts,
   bumpResumes,
   type ClaimPatch,

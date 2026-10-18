@@ -225,6 +225,16 @@ describe("renderNeedsYou", () => {
     expect(out).toContain("3 h");
   });
 
+  test("a multi-repo card links each other repo's PR after the primary", () => {
+    const multi = card({
+      otherPrs: [{ repo: "DB-Migrations", url: "https://github.com/o/db/pull/7" }],
+    });
+    const out = String(renderNeedsYou({ cards: [multi], checkedAgainstLinear: true }, NOW, null));
+    expect(out).toContain("PR #26");
+    expect(out).toContain("DB-Migrations PR #7");
+    expect(out.indexOf("PR #26")).toBeLessThan(out.indexOf("DB-Migrations PR #7"));
+  });
+
   test("a blocked card shows its reason; a rebasing card says it waits on CI", () => {
     const blocked = card({
       state: "blocked",

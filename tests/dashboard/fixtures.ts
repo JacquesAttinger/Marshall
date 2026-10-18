@@ -51,6 +51,7 @@ export function card(overrides: Partial<NeedsYouCard> = {}): NeedsYouCard {
     url: "https://linear.app/w/issue/TOD-12",
     state: "awaiting_human",
     prUrl: "https://github.com/o/r/pull/26",
+    otherPrs: [],
     updatedAt: new Date(NOW.getTime() - 3 * 3_600_000).toISOString(),
     tldr: null,
     round: null,

@@ -65,7 +65,7 @@ export async function runLoop(opts: RunOptions): Promise<void> {
   const rotated = opts.once ? [] : rotateLogs();
   const log = createLogger({ command: "run" });
   if (rotated.length > 0) log.info("run.logs_rotated", { rotated });
-  trustRepo(config.repoPath, log);
+  for (const repo of config.repos) trustRepo(repo.repoPath, log);
   const linear = await connectLinear({
     apiKey,
     teamId: config.teamId,

@@ -1,9 +1,9 @@
-// Last edited: 2026-10-18 13:20 PDT
+// Last edited: 2026-10-18 16:00 PDT
 // Typed loaders for marshall.config.json (committed, JSONC: `//` and `/* */` comments allowed)
 // and process.env (from .env).
 
 import { existsSync, readFileSync, statSync } from "node:fs";
-import { resolve } from "node:path";
+import { basename, resolve } from "node:path";
 import { z } from "zod";
 import { expandTilde } from "./paths.ts";
 
@@ -32,18 +32,43 @@ export const ModelsSchema = z
   })
   .strict();
 
-export const ConfigSchema = z
+const repoPath = z
+  .string()
+  .min(1)
+  .transform((p) => resolve(expandTilde(p)))
+  .refine((p) => existsSync(p) && statSync(p).isDirectory(), {
+    message: "must be an existing directory",
+  });
+
+const envVarName = /^[A-Z][A-Z0-9_]*$/;
+
+/** One repo Marshall may open worktrees and PRs in. */
+export const RepoSchema = z
+  .object({
+    /** The name a plan's `## Repos touched` uses, for example `Command`. */
+    slug: z.string().regex(/^[A-Za-z0-9][A-Za-z0-9._-]*$/),
+    repoPath,
+    /** The branch this repo's worktrees start from and its PRs target (Hemut: `staging`). */
+    baseBranch: z.string().min(1).default("main"),
+    /** Host ports this repo's Compose file reads from env; merged over the top-level `services`. */
+    services: z.record(z.string().regex(envVarName), port).optional(),
+  })
+  .strict();
+
+export type RepoConfig = z.infer<typeof RepoSchema>;
+
+const ConfigObjectSchema = z
   .object({
     workspace: z.string().min(1),
     teamId: z.string().min(1),
-    repoPath: z
-      .string()
-      .min(1)
-      .transform((p) => resolve(expandTilde(p)))
-      .refine((p) => existsSync(p) && statSync(p).isDirectory(), {
-        message: "must be an existing directory",
-      }),
+    /** The default repo. Set it, or set `repos`; the default is then the first entry of `repos`. */
+    repoPath: repoPath.optional(),
     baseBranch: z.string().min(1).default("main"),
+    /**
+     * Several repos, for a plan that spans them (Hemut). Each issue's primary repo is picked by the
+     * plan's `## Repos touched` section; an issue with no plan uses the first entry.
+     */
+    repos: z.array(RepoSchema).min(1).optional(),
     /**
      * Which Todo issues the scheduler takes. `assigned`: every unstarted issue assigned to the key's
      * user (the default). `labeled`: only those that also carry `pickupLabel`, so a workspace with
@@ -88,7 +113,7 @@ export const ConfigSchema = z
      * Host ports the target repo's Compose file reads from env, keyed by the env var name
      * (`POSTGRES_HOST_PORT: 5432`). Slot N gets `base + N * portOffsetPerSlot`.
      */
-    services: z.record(z.string().regex(/^[A-Z][A-Z0-9_]*$/), port).default({}),
+    services: z.record(z.string().regex(envVarName), port).default({}),
     portOffsetPerSlot: positiveInt.default(100),
     /** The dashboard's port on 127.0.0.1. `tailscale serve` forwards the tailnet to it. */
     dashboardPort: port.default(7474),
@@ -106,6 +131,34 @@ export const ConfigSchema = z
     tailscaleUsers: z.array(z.string().min(1)).min(1).optional(),
   })
   .strict();
+
+/**
+ * `repoPath` and `repos` are two spellings of the same thing. After parsing, `repos` always holds at
+ * least one entry, and `repoPath` and `baseBranch` always name the default (first) repo, so code
+ * that has one repo in mind keeps reading them.
+ */
+export const ConfigSchema = ConfigObjectSchema.superRefine((config, ctx) => {
+  if (config.repoPath === undefined && config.repos === undefined) {
+    ctx.addIssue({ code: "custom", path: ["repoPath"], message: "set repoPath or repos" });
+  }
+  if (config.repoPath !== undefined && config.repos !== undefined) {
+    ctx.addIssue({ code: "custom", path: ["repos"], message: "set repoPath or repos, not both" });
+  }
+  const slugs = (config.repos ?? []).map((r) => r.slug.toLowerCase());
+  if (new Set(slugs).size !== slugs.length) {
+    ctx.addIssue({ code: "custom", path: ["repos"], message: "repo slugs must be unique" });
+  }
+}).transform((config) => {
+  const repos: RepoConfig[] = config.repos ?? [
+    {
+      slug: basename(config.repoPath as string),
+      repoPath: config.repoPath as string,
+      baseBranch: config.baseBranch,
+    },
+  ];
+  const first = repos[0] as RepoConfig;
+  return { ...config, repos, repoPath: first.repoPath, baseBranch: first.baseBranch };
+});
 
 export type Config = Readonly<z.infer<typeof ConfigSchema>>;
 

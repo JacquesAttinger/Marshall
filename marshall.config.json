@@ -1,4 +1,4 @@
-// Last edited: 2026-10-11 19:10 PDT
+// Last edited: 2026-10-18 13:13 PDT
 // Marshall's settings. Comments are allowed here (JSONC); secrets go in .env, not in this file.
 // The daemon and the dashboard each read this once at start: after a change, restart them
 // (`marshall stop && marshall start`; the dashboard's restart is in docs/runbook.md).
@@ -17,9 +17,9 @@
   // Issues worked on at the same time. One slot, one worktree, one Compose stack each. Max 3.
   "maxAgents": 3,
   // New issue starts allowed per calendar day.
-  "dailyStartCap": 10,
+  "dailyStartCap": 25,
   // New issue starts allowed inside any rolling window of `windowHours` hours.
-  "windowStartCap": 10,
+  "windowStartCap": 25,
   // Length of that rolling window, in hours.
   "windowHours": 3,
   // How often the daemon polls Linear and checks on its agents, in seconds.

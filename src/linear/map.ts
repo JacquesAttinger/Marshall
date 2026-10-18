@@ -1,4 +1,4 @@
-// Last edited: 2026-10-18 13:17 PDT
+// Last edited: 2026-10-18 16:01 PDT
 // Pure mappers from Linear's raw issue shape to Marshall's types. No fetch, so tests hit them directly.
 
 import type { RawIssue, RawIssueDetail } from "./queries.ts";
@@ -22,6 +22,12 @@ export const TODO_STATE = "Todo";
 export const BLOCKED_STATE = "Blocked";
 /** Where an issue lands once its PR has merged. */
 export const DONE_STATE = "Done";
+
+/** The two statuses Marshall moves issues into when a project's config names none. */
+export const DEFAULT_STATES = {
+  needsVerification: NEEDS_VERIFICATION_STATE,
+  blocked: BLOCKED_STATE,
+};
 
 /** Agents act as the same Linear user as the human, so this footer is how the two are told apart. */
 export const MARSHALL_COMMENT_FOOTER = "\n\n_— Marshall_";

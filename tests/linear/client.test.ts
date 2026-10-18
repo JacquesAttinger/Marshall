@@ -1,4 +1,4 @@
-// Last edited: 2026-09-21 15:10 CDT
+// Last edited: 2026-10-18 15:59 PDT
 
 import { describe, expect, test } from "bun:test";
 import { ConfigError } from "../../src/config.ts";
@@ -300,7 +300,7 @@ describe("complete", () => {
 });
 
 describe("listAwaitingMerge", () => {
-  test("asks for Needs Verification and Blocked issues assigned to the viewer", async () => {
+  test("asks for the two Marshall statuses, as a variable, for issues assigned to the viewer", async () => {
     const { fake, client } = await connect({
       ReviewableIssues: () => ({ issues: { nodes: [rawIssue({ identifier: "CB-7" })] } }),
     });
@@ -309,9 +309,10 @@ describe("listAwaitingMerge", () => {
     expect(fake.callsFor("ReviewableIssues")[0]?.variables).toEqual({
       teamId: IDS.team,
       assigneeId: IDS.viewer,
+      states: ["Needs Verification", "Blocked"],
     });
     expect(fake.callsFor("ReviewableIssues")[0]?.query).toContain(
-      'name: { in: ["Needs Verification", "Blocked"] }',
+      "state: { name: { in: $states } }",
     );
   });
 });

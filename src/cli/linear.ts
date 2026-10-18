@@ -1,4 +1,4 @@
-// Last edited: 2026-10-18 13:17 PDT
+// Last edited: 2026-10-18 15:59 PDT
 // `marshall linear setup [--json]` — create the state and labels the loop needs. Idempotent.
 
 import { loadConfig, loadEnv, requireLinearApiKey } from "../config.ts";
@@ -31,7 +31,7 @@ export async function collectLinearSetup(opts: LinearSetupOptions): Promise<Line
   const log = createLogger({ command: "linear setup" });
   const gql = createGql({ apiKey, log, fetchImpl: opts.fetchImpl });
   const viewer = await verifyWorkspace(gql, config.workspace);
-  const result = await ensureWorkspaceSetup(gql, config.teamId, log);
+  const result = await ensureWorkspaceSetup(gql, config.teamId, log, config.states);
   return {
     workspace: viewer.workspace,
     user: viewer.name,

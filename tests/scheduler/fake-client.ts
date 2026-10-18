@@ -1,16 +1,19 @@
-// Last edited: 2026-10-18 13:17 PDT
+// Last edited: 2026-10-18 16:01 PDT
 // An in-memory LinearClient for scheduler tests. Keeps each issue's state and agent labels and
 // applies the same claim rules as the real client (unstarted + no agent label = claimable).
 // `tests/linear/fake-linear.ts` fakes the transport instead; this fakes the client.
 
+import type { StateNames } from "../../src/config.ts";
 import {
   agentLabelName,
+  DEFAULT_STATES,
   type IssueDetail,
   isAgentId,
   type LinearClient,
   MARSHALL_LABEL_GROUP,
   type PickableIssue,
 } from "../../src/linear/index.ts";
+import { reviewableStateNames } from "../../src/linear/queries.ts";
 
 export interface FakeIssue {
   issue: PickableIssue;
@@ -40,6 +43,8 @@ const STATE_TYPES: Record<string, string> = {
   "In Progress": "started",
   "Needs Verification": "started",
   Blocked: "started",
+  "In Review": "started",
+  Backlog: "backlog",
   Done: "completed",
 };
 
@@ -95,11 +100,29 @@ function unsupported(name: string): () => Promise<never> {
   };
 }
 
-export function fakeClient(issues: PickableIssue[] = []): FakeLinearClient {
-  const map = new Map<string, FakeIssue>();
-  for (const issue of issues) {
-    map.set(issue.id, { issue, state: { name: "Todo", type: "unstarted" }, labels: [] });
-  }
+/** The two list calls: unstarted issues, and issues in the two Marshall statuses. */
+function listings(map: Map<string, FakeIssue>, calls: FakeCall[], states: StateNames) {
+  return {
+    async listPickable() {
+      calls.push({ method: "listPickable", issueId: "" });
+      return [...map.values()].filter((i) => i.state.type === "unstarted").map((i) => i.issue);
+    },
+    async listAwaitingMerge() {
+      calls.push({ method: "listAwaitingMerge", issueId: "" });
+      const names = reviewableStateNames(states);
+      return [...map.values()].filter((i) => names.includes(i.state.name)).map((i) => i.issue);
+    },
+  };
+}
+
+export function fakeClient(
+  issues: PickableIssue[] = [],
+  states: StateNames = DEFAULT_STATES,
+): FakeLinearClient {
+  const todo = { name: "Todo", type: "unstarted" };
+  const map = new Map<string, FakeIssue>(
+    issues.map((issue) => [issue.id, { issue, state: { ...todo }, labels: [] }]),
+  );
   const calls: FakeCall[] = [];
   const comments: { issueId: string; body: string }[] = [];
   const get = (id: string): FakeIssue => {
@@ -108,6 +131,7 @@ export function fakeClient(issues: PickableIssue[] = []): FakeLinearClient {
     return found;
   };
   const client: FakeLinearClient = {
+    states,
     issues: map,
     calls,
     comments,
@@ -116,15 +140,7 @@ export function fakeClient(issues: PickableIssue[] = []): FakeLinearClient {
     labelsOf: (id) => get(id).labels,
     whoami: () => ({ userId: "user-me", name: "Test User", workspace: "chessbuddy" }),
     budget: () => null,
-    async listPickable() {
-      calls.push({ method: "listPickable", issueId: "" });
-      return [...map.values()].filter((i) => i.state.type === "unstarted").map((i) => i.issue);
-    },
-    async listAwaitingMerge() {
-      calls.push({ method: "listAwaitingMerge", issueId: "" });
-      const names = ["Needs Verification", "Blocked"];
-      return [...map.values()].filter((i) => names.includes(i.state.name)).map((i) => i.issue);
-    },
+    ...listings(map, calls, states),
     async complete(issueId, opts = {}) {
       calls.push({ method: "complete", issueId, arg: opts.comment });
       if (completeEntry(get(issueId)) && opts.comment)

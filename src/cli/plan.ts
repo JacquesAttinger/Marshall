@@ -1,11 +1,11 @@
-// Last edited: 2026-09-20 10:56 CDT
+// Last edited: 2026-10-18 15:59 PDT
 // `marshall plan <identifier> --cwd <worktree> [--revise] [--json]` runs the planning phase by hand
 // on an issue, in a worktree the caller already made. `marshall plan check <file>` is the heading
 // check alone. Both exist for the recorded example run and for manual tests; step 08 calls the API.
 
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
-import { loadConfig, loadEnv, requireLinearApiKey } from "../config.ts";
+import { connectSettings, loadConfig, loadEnv, requireLinearApiKey } from "../config.ts";
 import { migrate, openDb } from "../db/index.ts";
 import { connectLinear } from "../linear/index.ts";
 import { createLogger } from "../log.ts";
@@ -59,6 +59,7 @@ export async function runPlan(opts: PlanOptions): Promise<number> {
     teamId: config.teamId,
     workspace: config.workspace,
     log,
+    ...connectSettings(config),
   });
   const issue = await linear.getIssue(opts.identifier);
   ensureHome();

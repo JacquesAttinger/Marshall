@@ -1,4 +1,4 @@
-// Last edited: 2026-10-18 13:17 PDT
+// Last edited: 2026-10-18 16:01 PDT
 // Hand-rolled dispatch. No CLI dependency. `bin/marshall` imports this file.
 
 import { applyActiveProject } from "../projects.ts";
@@ -29,7 +29,7 @@ Commands:
   logs [identifier]   Tail the orchestrator log, or follow one issue's agent (claude logs)
   db migrate          Create the state dir and apply pending migrations
   linear setup [--json]
-                      Create the Needs Verification and Blocked states and the marshall labels
+                      Create the two Marshall statuses (or reuse the ones the config names) and the marshall labels
   enqueue <plan-file> [--dry-run] [--json]
                       Queue a finished plan: file a Todo issue with the plan as its body and the
                       marshall:queued label. Marshall skips planning and implements it.

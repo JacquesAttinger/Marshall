@@ -145,6 +145,7 @@ Set `"pickup": "labeled"` in its config and Marshall starts an issue only when i
 `linearProjectId` narrows either mode to one Linear project.
 `marshall linear setup` creates `marshall:queued` and `marshall:has-plan`, and a labeled project refuses to start without its label.
 `marshall queue` prints the mode, and marks an issue that lacks the label `not_queued`.
+A project can also name the two statuses Marshall moves issues into (`states`, default `Needs Verification` and `Blocked`); see [`docs/linear_setup.md`](linear_setup.md).
 The Hemut setup, repos and queue are in [`docs/hemut_runbook.md`](hemut_runbook.md).
 
 ## Reading it

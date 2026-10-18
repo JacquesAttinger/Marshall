@@ -1,4 +1,4 @@
-// Last edited: 2026-09-20 23:40 CDT
+// Last edited: 2026-10-18 15:59 PDT
 // Scheduler test setup: in-memory DB, fake Linear, fake worktrees, recording hooks, fake clock.
 
 import type { Database } from "bun:sqlite";
@@ -53,7 +53,7 @@ export function makeHarness(opts: HarnessOptions = {}): Harness {
     repoPath: tmpdir(),
     ...opts.config,
   });
-  const linear = fakeClient(opts.issues ?? []);
+  const linear = fakeClient(opts.issues ?? [], config.states);
   const { log, lines } = recordingLogger();
   const clock = { now: opts.now ?? NOW };
   const starts: Harness["starts"] = [];

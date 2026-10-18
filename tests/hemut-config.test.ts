@@ -1,4 +1,4 @@
-// Last edited: 2026-10-18 13:17 PDT
+// Last edited: 2026-10-18 15:59 PDT
 // The committed Hemut config must keep parsing, and must keep the safety settings the runbook relies on.
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
@@ -53,6 +53,13 @@ describe("marshall.hemut.config.json", () => {
     expect(config.issueTimeoutHours).toBeGreaterThanOrEqual(6);
     expect(config.stallMinutes).toBeGreaterThanOrEqual(30);
     expect(config.dailyStartCap).toBeLessThanOrEqual(4);
+  });
+
+  test("uses statuses Team Andrew1 already has, because only an admin can add statuses", () => {
+    expect(parseConfig(load(), PATH).states).toEqual({
+      needsVerification: "In Review",
+      blocked: "Backlog",
+    });
   });
 
   test("never ships a real team id: the placeholder has to be replaced on purpose", () => {

@@ -1,10 +1,10 @@
-// Last edited: 2026-10-18 13:17 PDT
+// Last edited: 2026-10-18 15:59 PDT
 // One pass of the scheduler: order the pickable issues and start what the caps allow. Each start
 // writes a `claiming` row before it touches Linear, so a crash in the middle leaves a row reconcile
 // can repair instead of an issue that is In Progress and invisible.
 
 import { capCheck, isPaused } from "../caps.ts";
-import { BLOCKED_STATE, isHumanOnly, isOptedIn, type PickableIssue } from "../linear/index.ts";
+import { isHumanOnly, isOptedIn, type PickableIssue } from "../linear/index.ts";
 import { resolveRepos } from "../repos.ts";
 import { claimRepos, setClaimRepos } from "./repos.ts";
 import {
@@ -73,7 +73,7 @@ export async function blockIssue(
 ): Promise<void> {
   const now = deps.now().toISOString();
   await deps.linear.release(issue.id, { comment });
-  await deps.linear.setState(issue.id, BLOCKED_STATE);
+  await deps.linear.setState(issue.id, deps.linear.states.blocked);
   setClaimState(deps.db, issue.id, BLOCKED, now);
   insertEvent(deps.db, now, eventType, issue.id, claim.agentId, {
     why,

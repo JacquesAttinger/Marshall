@@ -1,4 +1,4 @@
-// Last edited: 2026-10-18 13:17 PDT
+// Last edited: 2026-10-18 15:59 PDT
 // `marshall queue [--json]` — a dry run of one scheduler tick. Prints the ordered pickable list and,
 // for each issue, what the next tick would do with it and why. Reads Linear and the DB; writes nothing.
 
@@ -10,7 +10,13 @@ import {
   evaluateCaps,
   readCapCounts,
 } from "../caps.ts";
-import { type Config, loadConfig, loadEnv, pickupOptions, requireLinearApiKey } from "../config.ts";
+import {
+  type Config,
+  connectSettings,
+  loadConfig,
+  loadEnv,
+  requireLinearApiKey,
+} from "../config.ts";
 import { migrate, openDb } from "../db/index.ts";
 import {
   connectLinear,
@@ -233,7 +239,7 @@ export async function runQueue(opts: QueueOptions): Promise<void> {
     teamId: config.teamId,
     workspace: config.workspace,
     log,
-    pickup: pickupOptions(config),
+    ...connectSettings(config),
   });
   ensureHome();
   const db = openDb(dbPath());

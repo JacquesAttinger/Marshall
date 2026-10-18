@@ -1,4 +1,4 @@
-<!-- Last edited: 2026-10-18 13:17 PDT -->
+<!-- Last edited: 2026-10-18 15:59 PDT -->
 
 <a id="readme-top"></a>
 
@@ -288,6 +288,7 @@ Three config settings let Marshall run unattended against a workspace with real 
 - `pickup: "labeled"` takes only issues that carry `marshall:queued`. The default, `"assigned"`, takes every Todo issue assigned to you.
 - `repos` lists several repos (slug, path, base branch). A plan names the repos it touches in a `## Repos touched` section, and Marshall opens one worktree and one PR per repo on one branch. The PR is merged only by a human.
 - `marshall enqueue` queues a finished plan. A `marshall:has-plan` issue skips the planner.
+- `states` names the two Linear statuses Marshall uses (default `Needs Verification` and `Blocked`), for a team where only an admin can add statuses.
 
 Agents also run behind a guard (`scripts/merge-guard.ts`) that denies `gh pr merge`, approvals, and pushes to a protected branch.
 See [`docs/hemut_runbook.md`](docs/hemut_runbook.md) for the whole flow and [`docs/hemut_overnight_queue_plan.md`](docs/hemut_overnight_queue_plan.md) for the design.

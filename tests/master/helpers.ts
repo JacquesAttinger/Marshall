@@ -1,4 +1,4 @@
-// Last edited: 2026-10-18 13:17 PDT
+// Last edited: 2026-10-18 15:59 PDT
 // Master agent test setup: an in-memory DB, a temp MARSHALL_HOME, a fake clock, and fakes for
 // every injectable seam (runner, waiter, git, gh, the plan and hand-off phases, Linear). Runs are
 // rows the fake runner inserts; a test ends one with `finish(runId, terminal)`.
@@ -353,7 +353,7 @@ export function makeMasterHarness(opts: HarnessOptions = {}): MasterHarness {
     repoPath: home.dir,
     ...opts.config,
   });
-  const base = fakeClient();
+  const base = fakeClient([], config.states);
   const followUps: FollowUpInput[] = [];
   const linear = Object.assign(base, {
     followUps,

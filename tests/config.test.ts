@@ -1,4 +1,4 @@
-// Last edited: 2026-10-12 18:02 PDT
+// Last edited: 2026-10-18 15:59 PDT
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
@@ -212,5 +212,35 @@ describe("tailscaleUsers", () => {
     ).toEqual(["me@example.com"]);
     expect(() => parseConfig({ ...minimal(), tailscaleUsers: [] })).toThrow(/tailscaleUsers/);
     expect(() => parseConfig({ ...minimal(), tailscaleUsers: [""] })).toThrow(/tailscaleUsers/);
+  });
+});
+
+describe("states", () => {
+  test("default to the statuses marshall linear setup creates", () => {
+    expect(parseConfig(minimal()).states).toEqual({
+      needsVerification: "Needs Verification",
+      blocked: "Blocked",
+    });
+  });
+
+  test("can name statuses that already exist, one or both", () => {
+    const both = parseConfig({
+      ...minimal(),
+      states: { needsVerification: "In Review", blocked: "Backlog" },
+    });
+    expect(both.states).toEqual({ needsVerification: "In Review", blocked: "Backlog" });
+    const one = parseConfig({ ...minimal(), states: { blocked: "Backlog" } });
+    expect(one.states).toEqual({ needsVerification: "Needs Verification", blocked: "Backlog" });
+  });
+
+  test("refuses the same name twice and a status marshall uses for something else", () => {
+    expect(() =>
+      parseConfig({ ...minimal(), states: { needsVerification: "Review", blocked: "Review" } }),
+    ).toThrow(/must differ/);
+    for (const name of ["Todo", "In Progress", "Done"]) {
+      expect(() => parseConfig({ ...minimal(), states: { blocked: name } })).toThrow(
+        new RegExp(`"${name}" is a status Marshall uses`),
+      );
+    }
   });
 });

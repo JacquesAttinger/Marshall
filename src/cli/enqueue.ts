@@ -1,4 +1,4 @@
-// Last edited: 2026-10-18 13:17 PDT
+// Last edited: 2026-10-18 15:59 PDT
 // `marshall enqueue <plan-file> [--dry-run] [--json]` queues a finished plan for the next night run:
 // it checks the plan, then files a Todo issue assigned to you with the plan as the body and the
 // `marshall:queued` and `marshall:has-plan` labels. The scheduler picks the issue up, skips the
@@ -6,7 +6,7 @@
 
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { loadConfig, loadEnv, pickupOptions, requireLinearApiKey } from "../config.ts";
+import { connectSettings, loadConfig, loadEnv, requireLinearApiKey } from "../config.ts";
 import { type CreatedPlanIssue, connectLinear, type LinearClient } from "../linear/index.ts";
 import { createLogger } from "../log.ts";
 import { expandTilde } from "../paths.ts";
@@ -94,7 +94,7 @@ export async function runEnqueue(opts: EnqueueOptions): Promise<number> {
         teamId: config.teamId,
         workspace: config.workspace,
         log: createLogger({ command: "enqueue" }),
-        pickup: pickupOptions(config),
+        ...connectSettings(config),
       });
   try {
     const knownRepos = config.repos.map((r) => r.slug);

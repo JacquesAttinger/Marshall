@@ -1,4 +1,4 @@
-// Last edited: 2026-10-18 13:17 PDT
+// Last edited: 2026-10-18 15:59 PDT
 // Marshall's settings for the Hemut workspace (docs/hemut_runbook.md). Run it on the always-on VM:
 // register it with `marshall project import --name hemut marshall.hemut.config.json`, or point
 // MARSHALL_CONFIG at it. Comments are allowed (JSONC); secrets go in .env, not in this file.
@@ -15,6 +15,10 @@
   // issue assigned to the key's user would start (AND-2259 and the rest of the real backlog).
   "pickup": "labeled",
   "pickupLabel": "marshall:queued",
+  // Only an admin can add statuses in this workspace, so Marshall uses two that already exist.
+  // "In Review" is where a finished PR waits for a human. "Backlog" parks a stuck issue: it is not
+  // picked up there, and moving the issue back to Todo hands it back to Marshall.
+  "states": { "needsVerification": "In Review", "blocked": "Backlog" },
 
   // --- Where it lands: one entry per repo a plan may touch ---
   // The first repo is the default for an issue whose plan lists none. A plan names its repos in a

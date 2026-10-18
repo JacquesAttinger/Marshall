@@ -1,9 +1,9 @@
-// Last edited: 2026-10-18 13:17 PDT
+// Last edited: 2026-10-18 15:59 PDT
 // The one module that talks to Linear. Every read or write Marshall makes goes through LinearClient.
 // Claim lock = state In Progress + one `marshall/agent-<slot>` label. `delegate` waits for the
 // iteration 2 OAuth agent, because the API only accepts agent users there.
 
-import { ConfigError, type PickupOptions } from "../config.ts";
+import { ConfigError, type PickupOptions, type StateNames } from "../config.ts";
 import type { Logger } from "../log.ts";
 import { createGql, type Gql, LinearError, type RateBudget } from "./gql.ts";
 import {
@@ -36,13 +36,20 @@ import {
   IssueById,
   type Operation,
   pickableIssuesOp,
-  ReviewableIssues,
+  reviewableIssuesOp,
+  reviewableStateNames,
   type TeamMeta,
   TeamMetaOp,
   UpdateComment,
   UpdateIssue,
   Viewer,
 } from "./queries.ts";
+
+/** The status names a project gets when its config sets none. */
+export const DEFAULT_STATES: StateNames = {
+  needsVerification: NEEDS_VERIFICATION_STATE,
+  blocked: BLOCKED_STATE,
+};
 
 export interface ViewerInfo {
   userId: string;
@@ -73,10 +80,12 @@ export interface CreatedIssue {
 }
 
 export interface LinearClient {
+  /** The two statuses Marshall moves issues into: the config's names, or the defaults. */
+  readonly states: StateNames;
   whoami(): ViewerInfo;
   budget(): RateBudget | null;
   listPickable(): Promise<PickableIssue[]>;
-  /** Needs Verification and Blocked issues assigned to this user: the merge sweep's candidates. */
+  /** Issues in the two Marshall statuses assigned to this user: the merge sweep's candidates. */
   listAwaitingMerge(): Promise<PickableIssue[]>;
   /** True only when this call took the lock. False if someone else holds it or the state moved. */
   claim(issueId: string, agentId: AgentId): Promise<boolean>;
@@ -109,6 +118,8 @@ export interface ConnectOptions {
   fetchImpl?: typeof fetch;
   /** The config's pick-up rule. Unset: `assigned`, every Todo issue assigned to the key's user. */
   pickup?: PickupOptions;
+  /** The config's status names. Unset: `Needs Verification` and `Blocked`. */
+  states?: StateNames;
 }
 
 /** Run one operation. Small wrapper so call sites read as `run(gql, Op, vars)`. */
@@ -142,13 +153,13 @@ export function indexTeam(team: TeamMeta): TeamIndex {
   return { stateIds, labelIds };
 }
 
-function requireSetup(index: TeamIndex, pickup?: PickupOptions): void {
+function requireSetup(index: TeamIndex, states: StateNames, pickup?: PickupOptions): void {
   const missing: string[] = [];
   for (const name of [
     TODO_STATE,
     IN_PROGRESS_STATE,
-    NEEDS_VERIFICATION_STATE,
-    BLOCKED_STATE,
+    states.needsVerification,
+    states.blocked,
     DONE_STATE,
   ]) {
     if (!index.stateIds.has(name)) missing.push(`state "${name}"`);
@@ -176,6 +187,7 @@ interface Ctx {
   stateId(name: string): string;
   labelId(name: string): string;
   pickup: PickupOptions | undefined;
+  states: StateNames;
 }
 
 async function comment(ctx: Ctx, issueId: string, markdown: string): Promise<{ id: string }> {
@@ -303,6 +315,7 @@ async function createQueuedPlan(ctx: Ctx, input: PlanIssueInput): Promise<Create
 
 function buildClient(ctx: Ctx): LinearClient {
   return {
+    states: ctx.states,
     whoami: () => ctx.viewer,
     budget: () => ctx.gql.lastBudget,
     listPickable: async () => {
@@ -316,9 +329,12 @@ function buildClient(ctx: Ctx): LinearClient {
       return issues.nodes.map(toPickable);
     },
     listAwaitingMerge: async () => {
-      const { issues } = await run(ctx.gql, ReviewableIssues, {
+      const pickup = ctx.pickup;
+      const { issues } = await run(ctx.gql, reviewableIssuesOp(pickup), {
         teamId: ctx.teamId,
         assigneeId: ctx.viewer.userId,
+        states: reviewableStateNames(ctx.states),
+        ...(pickup?.mode === "labeled" ? { label: pickup.label } : {}),
       });
       return issues.nodes.map(toPickable);
     },
@@ -343,7 +359,8 @@ export async function connectLinear(opts: ConnectOptions): Promise<LinearClient>
   const viewer = await verifyWorkspace(gql, opts.workspace);
   const { team } = await run(gql, TeamMetaOp, { id: opts.teamId });
   const index = indexTeam(team);
-  requireSetup(index, opts.pickup);
+  const states = opts.states ?? DEFAULT_STATES;
+  requireSetup(index, states, opts.pickup);
   const stateId = (name: string): string => {
     const id = index.stateIds.get(name);
     if (!id) throw new LinearError(`Unknown workflow state "${name}"`, UpdateIssue.name);
@@ -359,5 +376,6 @@ export async function connectLinear(opts: ConnectOptions): Promise<LinearClient>
     stateId,
     labelId,
     pickup: opts.pickup,
+    states,
   });
 }

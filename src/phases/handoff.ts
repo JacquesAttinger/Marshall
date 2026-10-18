@@ -1,4 +1,4 @@
-// Last edited: 2026-09-21 14:40 CDT
+// Last edited: 2026-10-18 15:59 PDT
 // The hand-off phase as the master agent runs it: one `runHandoffPhase` call (step 06), then
 // Needs Verification, the follow-ups from implement.json (filed in batch, once per title, only
 // when `fileFollowUps` is on), the claim parked in `awaiting_human` (which frees the slot), and
@@ -6,7 +6,6 @@
 
 import type { HandoffPhaseInput, HandoffPhaseResult } from "../handoff/index.ts";
 import { readImplementStatus } from "../implement/status.ts";
-import { NEEDS_VERIFICATION_STATE } from "../linear/index.ts";
 import type { MasterAgent } from "../master/agent.ts";
 import { HANDOFF } from "../master/types.ts";
 import { terminalOf } from "../plan/wait.ts";
@@ -119,7 +118,7 @@ export async function fileFollowUps(agent: MasterAgent): Promise<number> {
 
 async function finishIssue(agent: MasterAgent, result: Extract<HandoffPhaseResult, { ok: true }>) {
   const { deps, issue } = agent;
-  await deps.linear.setState(issue.id, NEEDS_VERIFICATION_STATE);
+  await deps.linear.setState(issue.id, deps.linear.states.needsVerification);
   const followups = await fileFollowUps(agent);
   agent.patch({ prUrl: result.prUrl });
   agent.transition(AWAITING_HUMAN, { round: result.round });

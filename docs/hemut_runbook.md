@@ -1,4 +1,4 @@
-<!-- Last edited: 2026-10-18 13:17 PDT -->
+<!-- Last edited: 2026-10-18 15:59 PDT -->
 
 # Hemut overnight queue — runbook
 
@@ -57,7 +57,9 @@ Policy the agents follow: `~/code/hemut3/CLAUDE.md`, copied into `plugin/skills/
    A plan that fails the check blocks the issue with the reason in a Linear comment.
 3. It runs `/marshall:implement-hemut`: code, the local gate in every repo, push, one PR per repo, CI, then the review pass, then fixes.
    The agent may start sub-agents, as in any Claude Code session.
-4. It writes the hand-off and moves the issue to Needs Verification.
+4. It writes the hand-off and moves the issue to the project's "needs verification" status.
+   In the Hemut config that is `In Review`, because only an admin can add statuses to Team Andrew1.
+   A stuck issue is parked in `Backlog`; move it back to Todo to try again.
 
 ## Never merge: the three locks
 
@@ -97,7 +99,8 @@ Agents that already run keep running; `marshall kill <ID>` stops one.
    `marshall linear setup` refuses a key from another workspace.
 4. Fill in `teamId` in `marshall.hemut.config.json` (Team Andrew1).
 5. `marshall project import --name hemut marshall.hemut.config.json`, then `marshall linear setup`.
-   Setup creates the states and the labels `marshall:queued` and `marshall:has-plan`.
+   The Hemut config names statuses that already exist (`states`), so setup creates only the eight labels, including `marshall:queued` and `marshall:has-plan`.
+   If you change `states` to names the team lacks, setup tries to create them, and that needs a workspace admin.
 6. Fill in each repo's Compose host ports in `services`, then restart the services.
 7. Clone `hemut-ai-harness` next to the repos, or set `HEMUT_ATLAS_DIR`, so agents can read the Architecture Atlas.
    If the atlas is missing, the agent says so in the follow-ups.
@@ -132,7 +135,7 @@ Agents that already run keep running; `marshall kill <ID>` stops one.
 
 | Problem | Do this |
 |---|---|
-| An issue is Blocked | Read the Linear comment. Fix the cause (a plan section, a repo slug, a red gate). Move it back to Todo. |
+| An issue is parked in Backlog (Marshall's "blocked") | Read the Linear comment. Fix the cause (a plan section, a repo slug, a red gate). Move it back to Todo. |
 | "repo X is not in the config" | The plan names a repo the config lacks. Fix the plan's slug or add the repo (after the ruleset check). |
 | Marshall picked up nothing | `marshall queue` shows why each issue waits. Check the label, the assignee, and the caps. |
 | An agent tried to merge | Look for a `PreToolUse` line with `"blocked": true` in `~/.marshall/events/<runId>.jsonl`. Find the instruction that asked for it. |

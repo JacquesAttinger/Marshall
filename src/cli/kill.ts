@@ -1,9 +1,9 @@
-// Last edited: 2026-10-03 18:27 CDT
+// Last edited: 2026-10-18 15:59 PDT
 // `marshall kill <identifier>`: a thin wrapper over `requestKill` (src/kill.ts), which the
 // dashboard's Kill button calls too. This file opens the DB, connects to Linear only when the
 // direct path needs it, and prints the result.
 
-import { loadConfig, loadEnv, requireLinearApiKey } from "../config.ts";
+import { connectSettings, loadConfig, loadEnv, requireLinearApiKey } from "../config.ts";
 import { migrate, openDb } from "../db/index.ts";
 import { killMessage, killSucceeded, requestKill } from "../kill.ts";
 import { connectLinear } from "../linear/index.ts";
@@ -36,6 +36,7 @@ export async function runKill(opts: KillOptions): Promise<number> {
             teamId: config.teamId,
             workspace: config.workspace,
             log,
+            ...connectSettings(config),
           });
         },
       },

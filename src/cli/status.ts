@@ -1,10 +1,10 @@
-// Last edited: 2026-10-18 13:17 PDT
+// Last edited: 2026-10-18 15:59 PDT
 // `marshall status [--json]` — config, state dir, schema version, row counts, then the operational
 // sections from status-ops.ts: daemon, agents, queue, needs you. The queue needs Linear, so it is
 // attempted only when the DB exists and a key is set; everything else works offline.
 
 import { existsSync } from "node:fs";
-import { type Config, loadConfig, loadEnv, pickupOptions, resolveConfigPath } from "../config.ts";
+import { type Config, connectSettings, loadConfig, loadEnv, resolveConfigPath } from "../config.ts";
 import { type Counts, counts, openDb, schemaVersion } from "../db/index.ts";
 import { connectLinear } from "../linear/index.ts";
 import { createLogger } from "../log.ts";
@@ -101,7 +101,7 @@ function queueSource(
         teamId: config.teamId,
         workspace: config.workspace,
         log,
-        pickup: pickupOptions(config),
+        ...connectSettings(config),
       });
       return collectQueue({ db, config, linear, now });
     },

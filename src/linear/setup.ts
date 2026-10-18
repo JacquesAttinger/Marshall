@@ -1,8 +1,9 @@
-// Last edited: 2026-10-18 13:17 PDT
+// Last edited: 2026-10-18 15:59 PDT
 // Idempotent workspace setup: the Needs Verification and Blocked states, the agent-filed and
 // human-only labels, and the marshall label group with one child per agent slot. Reads team
 // metadata once, creates only what is missing.
 
+import type { StateNames } from "../config.ts";
 import type { Logger } from "../log.ts";
 import { run } from "./client.ts";
 import type { Gql } from "./gql.ts";
@@ -114,10 +115,21 @@ async function ensureLabel(
   return { id: issueLabelCreate.issueLabel.id, name: spec.name, created: true };
 }
 
+const DEFAULT_STATE_NAMES: StateNames = {
+  needsVerification: NEEDS_VERIFICATION_STATE,
+  blocked: BLOCKED_STATE,
+};
+
+/**
+ * Make sure the team has the two statuses, the labels, and the label group. A status that already
+ * exists under the configured name is reused, so a team where only an admin can add statuses can
+ * point `names` at statuses it has and setup then creates labels only.
+ */
 export async function ensureWorkspaceSetup(
   gql: Gql,
   teamId: string,
   log: Logger,
+  names: StateNames = DEFAULT_STATE_NAMES,
 ): Promise<SetupResult> {
   const { team } = await run(gql, TeamMetaOp, { id: teamId });
   const states = [...team.states.nodes];
@@ -126,14 +138,14 @@ export async function ensureWorkspaceSetup(
     gql,
     teamId,
     states,
-    { name: NEEDS_VERIFICATION_STATE, color: NEEDS_VERIFICATION_COLOR, after: IN_PROGRESS_STATE },
+    { name: names.needsVerification, color: NEEDS_VERIFICATION_COLOR, after: IN_PROGRESS_STATE },
     log,
   );
   const blocked = await ensureState(
     gql,
     teamId,
     states,
-    { name: BLOCKED_STATE, color: BLOCKED_COLOR, after: NEEDS_VERIFICATION_STATE },
+    { name: names.blocked, color: BLOCKED_COLOR, after: names.needsVerification },
     log,
   );
   const agentFiled = await ensureLabel(gql, teamId, labels, { name: AGENT_FILED_LABEL }, log);

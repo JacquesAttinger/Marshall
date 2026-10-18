@@ -1,10 +1,11 @@
-// Last edited: 2026-10-18 13:17 PDT
+// Last edited: 2026-10-18 15:59 PDT
 // Typed loaders for marshall.config.json (committed, JSONC: `//` and `/* */` comments allowed)
 // and process.env (from .env).
 
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { basename, resolve } from "node:path";
 import { z } from "zod";
+import { BLOCKED_STATE, NEEDS_VERIFICATION_STATE } from "./linear/map.ts";
 import { expandTilde } from "./paths.ts";
 
 const REPO_ROOT = resolve(import.meta.dir, "..");
@@ -39,6 +40,25 @@ const repoPath = z
   .refine((p) => existsSync(p) && statSync(p).isDirectory(), {
     message: "must be an existing directory",
   });
+
+/**
+ * The two Linear statuses Marshall moves an issue into. The defaults are the statuses
+ * `marshall linear setup` creates; a project may name statuses that already exist instead (a team
+ * where only an admin can add statuses). Both must exist in the team when Marshall starts.
+ */
+export const StatesSchema = z
+  .object({
+    /** Where a finished issue waits for a human: PR open, hand-off posted. */
+    needsVerification: z.string().min(1).default(NEEDS_VERIFICATION_STATE),
+    /** Where a stuck issue is parked until a human moves it back to Todo. */
+    blocked: z.string().min(1).default(BLOCKED_STATE),
+  })
+  .strict();
+
+export type StateNames = z.infer<typeof StatesSchema>;
+
+/** Statuses Marshall already uses for its own purposes; a custom name may not reuse them. */
+const RESERVED_STATES = ["Todo", "In Progress", "Done"];
 
 const envVarName = /^[A-Z][A-Z0-9_]*$/;
 
@@ -79,6 +99,11 @@ const ConfigObjectSchema = z
     pickupLabel: z.string().min(1).default("marshall:queued"),
     /** Optional Linear project (a grouping inside the team) that narrows the pick-up further. */
     linearProjectId: z.string().min(1).optional(),
+    /** Names of the two statuses Marshall moves issues into (default `Needs Verification`, `Blocked`). */
+    states: StatesSchema.default({
+      needsVerification: NEEDS_VERIFICATION_STATE,
+      blocked: BLOCKED_STATE,
+    }),
     /**
      * Which plugin skill implements a plan: `implement`, or `implement-hemut` (Hemut policy, one PR
      * per repo, never merges). The resolver and the hand-off writer do not change.
@@ -149,6 +174,23 @@ export const ConfigSchema = ConfigObjectSchema.superRefine((config, ctx) => {
   if (config.repoPath !== undefined && config.repos !== undefined) {
     ctx.addIssue({ code: "custom", path: ["repos"], message: "set repoPath or repos, not both" });
   }
+  const { needsVerification, blocked } = config.states;
+  if (needsVerification === blocked) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["states"],
+      message: "needsVerification and blocked must differ",
+    });
+  }
+  for (const [key, name] of Object.entries(config.states)) {
+    if (RESERVED_STATES.includes(name)) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["states", key],
+        message: `"${name}" is a status Marshall uses for something else`,
+      });
+    }
+  }
   const slugs = (config.repos ?? []).map((r) => r.slug.toLowerCase());
   if (new Set(slugs).size !== slugs.length) {
     ctx.addIssue({ code: "custom", path: ["repos"], message: "repo slugs must be unique" });
@@ -194,6 +236,11 @@ export function pickupOptions(config: Config): PickupOptions {
     label: config.pickupLabel,
     ...(config.linearProjectId ? { projectId: config.linearProjectId } : {}),
   };
+}
+
+/** What `connectLinear` needs from the config: the pick-up rule and the two status names. */
+export function connectSettings(config: Config): { pickup: PickupOptions; states: StateNames } {
+  return { pickup: pickupOptions(config), states: config.states };
 }
 
 export const EnvSchema = z.object({

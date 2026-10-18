@@ -1,10 +1,10 @@
-// Last edited: 2026-10-18 13:17 PDT
+// Last edited: 2026-10-18 15:59 PDT
 // One GraphQL document plus its Zod response schema per Linear operation Marshall uses.
 // Field names follow Linear's public schema. Keep documents minimal: every field costs complexity.
 
 import { z } from "zod";
-import type { PickupOptions } from "../config.ts";
-import { BLOCKED_STATE, HUMAN_ONLY_LABEL, NEEDS_VERIFICATION_STATE, QUEUED_LABEL } from "./map.ts";
+import type { PickupOptions, StateNames } from "../config.ts";
+import { HUMAN_ONLY_LABEL, QUEUED_LABEL } from "./map.ts";
 
 export interface Operation<T> {
   name: string;
@@ -154,27 +154,43 @@ query PickableIssues(${vars.join(", ")}) {
 }
 
 /**
- * Issues a human has not closed yet whose PR may already be merged: Needs Verification and
- * Blocked, assigned to Marshall's user. Unlike `PickableIssues` it keeps `human-only` issues,
- * since a human-only issue is still marked Done when its PR merges.
+ * Issues a human has not closed yet whose PR may already be merged: the two Marshall statuses
+ * (Needs Verification and Blocked unless the config names others), assigned to Marshall's user.
+ * Unlike the pickable query it keeps `human-only` issues, since a human-only issue is still marked
+ * Done when its PR merges. In `labeled` mode the opt-in label is required too: a project that
+ * names busy statuses such as "In Review" must not sweep every issue its user has there. Status
+ * names are sent as query variables, never spliced into the text.
  */
-export const ReviewableIssues: Operation<{ issues: { nodes: RawIssue[] } }> = {
-  name: "ReviewableIssues",
-  doc: `${ISSUE_FIELDS}
-query ReviewableIssues($teamId: ID!, $assigneeId: ID!) {
+export function reviewableIssuesOp(
+  pickup?: PickupOptions,
+): Operation<{ issues: { nodes: RawIssue[] } }> {
+  const labeled = pickup?.mode === "labeled";
+  const labelFilter = labeled ? "\n      labels: { some: { name: { eq: $label } } }" : "";
+  const vars = ["$teamId: ID!", "$assigneeId: ID!", "$states: [String!]!"];
+  if (labeled) vars.push("$label: String!");
+  return {
+    name: "ReviewableIssues",
+    doc: `${ISSUE_FIELDS}
+query ReviewableIssues(${vars.join(", ")}) {
   issues(
     filter: {
       team: { id: { eq: $teamId } }
       assignee: { id: { eq: $assigneeId } }
-      state: { name: { in: ["${NEEDS_VERIFICATION_STATE}", "${BLOCKED_STATE}"] } }
+      state: { name: { in: $states } }${labelFilter}
     }
     first: 50
   ) {
     nodes { ...IssueFields }
   }
 }`,
-  schema: z.object({ issues: z.object({ nodes: z.array(RawIssueSchema) }) }),
-};
+    schema: z.object({ issues: z.object({ nodes: z.array(RawIssueSchema) }) }),
+  };
+}
+
+/** The status names a `reviewableIssuesOp` query is called with. */
+export function reviewableStateNames(states: StateNames): string[] {
+  return [states.needsVerification, states.blocked];
+}
 
 export const IssueById: Operation<{ issue: RawIssueDetail }> = {
   name: "IssueById",

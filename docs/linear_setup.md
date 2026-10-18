@@ -26,6 +26,23 @@ Two things stay manual: the API key and the GitHub integration.
    "PR opened → In Progress" never fights the claim, because the claim moves the issue to In Progress before any PR exists.
 4. Run `bin/marshall linear setup` (below).
 
+## Your own status names
+
+Only a workspace admin can add statuses in some workspaces.
+A project can then name two statuses the team already has:
+
+```jsonc
+"states": { "needsVerification": "In Review", "blocked": "Backlog" }
+```
+
+Both keys are optional; the defaults are `Needs Verification` and `Blocked`.
+The two names must differ, and may not be `Todo`, `In Progress`, or `Done`.
+Every place that moves an issue, and `marshall linear setup`, uses these names.
+A name that does not exist in the team is created by setup (which needs an admin), and Marshall refuses to start while it is missing.
+Pick a `blocked` status that Marshall does not pick up from (not Todo), so a stuck issue waits there until a human moves it back to Todo.
+The merge sweep looks at issues in these two statuses.
+In `pickup: "labeled"` mode it only looks at issues that also carry the opt-in label, so a busy status such as `In Review` is not swept.
+
 ## `marshall linear setup`
 
 Idempotent.

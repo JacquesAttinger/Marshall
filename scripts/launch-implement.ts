@@ -1,8 +1,8 @@
-// Last edited: 2026-09-20 12:25 CDT
+// Last edited: 2026-10-20 13:08 PDT
 // Dev launcher for one `/marshall:implement` run, until step 08's orchestrator exists.
 //
 //   bun scripts/launch-implement.ts --cwd <worktree> --plan docs/x_plan.md --issue CB-12 --slot 0
-//     [--issue-url <url>] [--model opus] [--effort high] [--max-budget-usd <n>] [--watch]
+//     [--issue-url <url>] [--model opus] [--effort medium] [--max-budget-usd <n>] [--watch]
 //   bun scripts/launch-implement.ts --attach <runId>
 //
 // Prints the run id and job id. With --watch it stays up, ingests the run's hook events, stops the
@@ -44,7 +44,7 @@ function usage(message?: string): never {
   if (message) console.error(message);
   console.error(
     "Usage: bun scripts/launch-implement.ts --cwd <worktree> --plan <path> --issue <ID> --slot <n>" +
-      " [--issue-url <url>] [--model opus] [--effort high] [--max-budget-usd <n>] [--watch]\n" +
+      " [--issue-url <url>] [--model opus] [--effort medium] [--max-budget-usd <n>] [--watch]\n" +
       "       bun scripts/launch-implement.ts --attach <runId>",
   );
   process.exit(2);
@@ -56,7 +56,7 @@ const EMPTY: Args = {
   issue: "",
   slot: 0,
   model: "",
-  effort: "high",
+  effort: "medium",
   watch: false,
 };
 
@@ -85,7 +85,7 @@ export function parseArgs(argv: string[]): Args {
     slot,
     issueUrl: values["issue-url"],
     model: values.model ?? "opus",
-    effort: (values.effort ?? "high") as Effort,
+    effort: (values.effort ?? "medium") as Effort,
     maxBudgetUsd: values["max-budget-usd"] ? Number(values["max-budget-usd"]) : undefined,
     watch,
   };

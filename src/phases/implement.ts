@@ -1,4 +1,4 @@
-// Last edited: 2026-10-18 13:17 PDT
+// Last edited: 2026-10-20 13:08 PDT
 // The implement + review phase: launch `/marshall:implement`, wait for its Stop, and read the
 // outcome from implement.json. This is where the spec's limits live: a stall (killed by the
 // pulse) resumes the session up to `maxResumes`, then one fresh restart from the plan commit;
@@ -35,7 +35,7 @@ function launchOpts(agent: MasterAgent) {
   return {
     name: runName(agent.identifier, "implement"),
     cwd: agent.cwd,
-    effort: "high" as const,
+    effort: "medium" as const,
     extraArgs: ["--plugin-dir", PLUGIN_DIR, ...siblingDirArgs(deps.db, claim.issueId)],
     env: implementEnv(
       agent.identifier,

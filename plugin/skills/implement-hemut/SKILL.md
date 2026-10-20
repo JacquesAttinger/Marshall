@@ -5,7 +5,7 @@ argument-hint: <plan-path> <ISSUE-ID>
 disable-model-invocation: true
 ---
 
-<!-- Last edited: 2026-10-19 23:10 PDT -->
+<!-- Last edited: 2026-10-20 18:30 PDT -->
 <!-- Copy of ../implement/SKILL.md with Hemut policy (~/code/hemut3/CLAUDE.md) and multi-repo plans added. The status file protocol is identical, plus the optional `prs` array. -->
 
 You are the implementer in an unattended pipeline at Hemut.
@@ -100,6 +100,7 @@ Every field is present every time. `updatedAt` is `date -u +%Y-%m-%dT%H:%M:%SZ`.
    Keep `cycle`, `prUrl`, `followups`, `reviewNotes` from it and continue from its `phase`.
    A PR that already exists is reused, never recreated.
 5. Write `phase: starting` with `branch`, `slot`, `maxCycles`.
+   On a fresh run (not a resume), `rm -f "$MARSHALL_ISSUE_DIR/review-ledger.md"` so an older run's ledger does not carry over.
 
 ## 2. Read the plan
 
@@ -166,6 +167,18 @@ Write `phase: pr_open`, `prUrl` (the primary's), `prs` (all of them), `ciState: 
 
 ## 7. Review cycles
 
+The review ledger is `$MARSHALL_ISSUE_DIR/review-ledger.md`: what each cycle did with each BLOCKING finding, so the next review can see it.
+Each review starts fresh, and without the ledger it re-raises points you already disputed and calls your fixes scope creep.
+Append to it; never rewrite or reorder it. One line per BLOCKING finding:
+
+```
+- cycle <n> fixed: <file:line - summary> -> <what changed, one line> (<short sha>)
+- cycle <n> disputed: <file:line - summary> -> <why the finding is wrong, one line>
+```
+
+Write the change and the reason plainly: the reviewer treats a `disputed:` line as settled and does not block behaviour that a `fixed:` line explains.
+`<ledger-path>` below is that file's absolute path (expand `$MARSHALL_ISSUE_DIR` first).
+
 Repeat for `cycle` = 1 .. `maxCycles`:
 
 1. Write `cycle`, `phase: pr_open`. Wait for CI on every PR: `gh pr checks <url> --watch --fail-fast`.
@@ -174,17 +187,26 @@ Repeat for `cycle` = 1 .. `maxCycles`:
    Green → write `ciState: green`.
    No checks on the PR 30 seconds after the push (`no checks reported`) means the repo has no CI: write `ciState: green`.
 2. Write `phase: reviewing`. This is Hemut's mandatory pre-PR review pass; no PR is done without it.
-   Invoke the `Skill` tool with `skill: "marshall:review"` and `args: "<plan-path>"`. It reviews every repo in `MARSHALL_REPOS_JSON`.
+   Invoke the `Skill` tool with `skill: "marshall:review"` and `args: "<plan-path> <ledger-path>"`. It reviews every repo in `MARSHALL_REPOS_JSON`.
    Its three-list report is an intermediate result for you, not your final answer: do not end your turn after it.
    Append its `NOTES (plausible)` lines to `reviewNotes` (skip duplicates) and go straight to 7.3.
 3. Both BLOCKING lists empty → `outcome: pr_green`, go to step 9.
 4. Otherwise write `phase: fixing`. Fix every BLOCKING finding.
    A finding you judge wrong after reading the code gets a one-line reply in the commit message and moves to `reviewNotes` prefixed `disputed:`.
-   Run the local gate, commit, push, and start the next cycle.
+   Run the local gate, commit, and push.
+   Append one ledger line per BLOCKING finding of this cycle, then start the next cycle.
+   After the fixes of cycle `maxCycles`, go to step 8 instead.
 
-## 8. Cap reached
+## 8. Final review
 
-After `maxCycles` cycles with BLOCKING findings still open: `outcome: review_exhausted`, `reason` = `<n> cycles; still open: <first unfixed finding>`.
+The fixes of cycle `maxCycles` have not been reviewed yet, so review them once more before you stop.
+`cycle` stays `maxCycles`. On a resume, you are in this step when the ledger already has lines for cycle `maxCycles`.
+
+1. Write `phase: pr_open` and wait for CI exactly as in 7.1 (red is fixed inside this step).
+2. Write `phase: reviewing` and run the review exactly as in 7.2, ledger included. Append its `NOTES (plausible)` lines to `reviewNotes`.
+3. Both BLOCKING lists empty → `outcome: pr_green`.
+   Otherwise fix nothing more: `outcome: review_exhausted`, `reason` = `<maxCycles> cycles; still open: <first finding of this review>`, and list every open finding in the `## Still failing` section.
+4. Go to step 9.
 
 ## 9. Finish
 

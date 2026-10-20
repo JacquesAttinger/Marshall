@@ -273,8 +273,8 @@ It is not the repo root because a plugin root's `bin/` goes on the agent's `PATH
 | Skill | Does |
 |---|---|
 | `/marshall:plan <brief>` | The autonomous planner; see [`docs/planning.md`](docs/planning.md). |
-| `/marshall:implement <plan-path> <ISSUE-ID>` | Plan → commits → local gate → PR → CI → `/marshall:review` → fixes, up to `maxFixCycles` times. Always ends with a PR; a red run leaves a draft whose body starts with `## Still failing`. |
-| `/marshall:review <plan-path>` | The built-in `/code-review` bug hunt plus a Spec pass against the plan. `CONFIRMED` findings and spec gaps block; `PLAUSIBLE` ones are notes. |
+| `/marshall:implement <plan-path> <ISSUE-ID>` | Plan → commits → local gate → PR → CI → `/marshall:review` → fixes, up to `maxFixCycles` times, then one last review of the final fixes. A review ledger carries each cycle's fixes and disputes to the next review. Always ends with a PR; a red run leaves a draft whose body starts with `## Still failing`. |
+| `/marshall:review <plan-path> [<ledger-path>]` | The built-in `/code-review` bug hunt plus a Spec pass against the plan. `CONFIRMED` findings and spec gaps block; `PLAUSIBLE` ones are notes. With a ledger, settled disputes are not re-raised, and extra behaviour that fixes an earlier finding or that a repo rule requires is a note, not a block. |
 | `/marshall:handoff <plan-path> <ISSUE-ID>` | The read-only hand-off writer: six sections from the plan, the diff, and the PR into `~/.marshall/handoffs/<ISSUE-ID>.md`; see [`docs/handoff.md`](docs/handoff.md). |
 | `/marshall:implement-hemut <plan-path> <ISSUE-ID>` | The Hemut version of implement (`implementSkill` in the config): Hemut policy, one PR per repo a plan touches, never merges. |
 | `/marshall:resolve-conflicts <plan-path> <ISSUE-ID> <conflict\|ci>` | After a sibling PR merged: finish the rebase the orchestrator started (conflict mode) or fix the red CI it left (ci mode), then the full done gate. |

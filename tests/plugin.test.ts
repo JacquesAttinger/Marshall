@@ -1,4 +1,4 @@
-// Last edited: 2026-10-18 13:17 PDT
+// Last edited: 2026-10-20 18:30 PDT
 // The plugin is what the agents load with --plugin-dir; a broken manifest or a skill without
 // frontmatter fails silently inside an agent, so these checks run here instead.
 
@@ -96,6 +96,31 @@ describe("skills", () => {
     );
     const text = readFileSync(join(SKILLS_DIR, "implement", "SKILL.md"), "utf8");
     expect(text).toContain(`${HANDOFF_START}\n${HANDOFF_PLACEHOLDER}\n${HANDOFF_END}`);
+  });
+});
+
+// A fresh review each cycle re-raised disputed points and blocked the fixes it had asked for,
+// and the last cycle's fixes were never reviewed (AND-2277). The ledger and step 8 fix that.
+describe("review ledger", () => {
+  test("review takes the ledger as an optional second argument", () => {
+    const fields = frontmatter(join(SKILLS_DIR, "review", "SKILL.md"));
+    expect(fields["argument-hint"]).toBe("<plan-path> [<ledger-path>]");
+  });
+
+  test.each(["implement", "implement-hemut", "resolve-conflicts"])(
+    "%s passes the ledger to the review",
+    (skill) => {
+      const text = readFileSync(join(SKILLS_DIR, skill, "SKILL.md"), "utf8");
+      expect(text).toContain("review-ledger.md");
+      expect(text).toContain('args: "<plan-path> <ledger-path>"');
+    },
+  );
+
+  test.each(["implement", "implement-hemut"])("%s reviews the last cycle's fixes", (skill) => {
+    const text = readFileSync(join(SKILLS_DIR, skill, "SKILL.md"), "utf8");
+    expect(text).toContain("## 8. Final review");
+    expect(text).toContain("cycle <n> fixed:");
+    expect(text).toContain("cycle <n> disputed:");
   });
 });
 

@@ -1,4 +1,4 @@
-// Last edited: 2026-10-18 13:17 PDT
+// Last edited: 2026-10-20 13:08 PDT
 // Merge detection and rebasing, driven from the claims table on every pulse (spec 5.4). When a
 // Marshall PR merges, every other parked PR is queued (`rebase_after`). One rebase runs at a
 // time, oldest first: `git rebase origin/<base>` + push inline, then CI. Clean and green
@@ -248,7 +248,7 @@ async function startResolver(ctx: Ctx, mode: "conflict" | "ci"): Promise<boolean
       name: runName(ctx.identifier, "resolve"),
       cwd: cwdOf(ctx),
       model: implementModel(ctx.config),
-      effort: "high",
+      effort: "medium",
       prompt: resolvePrompt(ctx.claim.planPath as string, ctx.identifier, mode),
       extraArgs: ["--plugin-dir", PLUGIN_DIR, ...siblingDirArgs(ctx.db, ctx.claim.issueId)],
       env: implementEnv(

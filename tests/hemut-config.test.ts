@@ -1,4 +1,4 @@
-// Last edited: 2026-10-18 15:59 PDT
+// Last edited: 2026-10-19 22:55 PDT
 // The committed Hemut config must keep parsing, and must keep the safety settings the runbook relies on.
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
@@ -60,6 +60,11 @@ describe("marshall.hemut.config.json", () => {
       needsVerification: "In Review",
       blocked: "Backlog",
     });
+  });
+
+  test("Command worktrees link the main checkout's node_modules", () => {
+    const command = parseConfig(load(), PATH).repos.find((r) => r.slug === "Command");
+    expect(command?.linkPaths).toEqual(["node_modules"]);
   });
 
   test("never ships a real team id: the placeholder has to be replaced on purpose", () => {

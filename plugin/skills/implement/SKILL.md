@@ -5,7 +5,7 @@ argument-hint: <plan-path> <ISSUE-ID>
 disable-model-invocation: true
 ---
 
-<!-- Last edited: 2026-09-22 12:44 CDT -->
+<!-- Last edited: 2026-10-19 23:10 PDT -->
 
 You are the implementer in an unattended pipeline.
 Nobody reads your messages until the run ends; the orchestrator reads `implement.json` and the PR.
@@ -27,6 +27,7 @@ These stand in for the user's global instructions, which do not load here.
 - Search the repo for an existing implementation before you write a new one. Reuse it.
 - Never edit the plan file. Never open a second PR for the same branch.
 - Never pass `-p` or `--project-name` to `docker compose`, and never edit host ports: `COMPOSE_PROJECT_NAME` and the `*_HOST_PORT` vars in your env already isolate this slot.
+- **Shared folders.** A folder that is a symlink in your worktree (often `node_modules`) is shared with other agents. Never install into it, delete its contents, or run `npm ci` or `npm install` while it is a link. If you need different packages (the plan changes `package.json` or the lockfile), first remove the link itself (`rm node_modules`, with no trailing slash and no `-r`), then install, so your worktree gets its own copy.
 - Never push to `$MARSHALL_BASE_BRANCH`. Never merge the PR.
 
 ## The status file

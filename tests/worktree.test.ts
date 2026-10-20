@@ -1,12 +1,22 @@
-// Last edited: 2026-09-20 15:50 CDT
+// Last edited: 2026-10-19 22:55 PDT
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { existsSync, mkdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  lstatSync,
+  mkdirSync,
+  readFileSync,
+  readlinkSync,
+  realpathSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { join } from "node:path";
 import { GitError } from "../src/git.ts";
 import {
   copyEnvFiles,
   createWorktree,
+  linkSharedPaths,
   listWorktrees,
   removeWorktree,
   reuseWorktree,
@@ -121,5 +131,65 @@ describe("removeWorktree and helpers", () => {
     const target = join(repo.dir, "..", "target");
     mkdirSync(target);
     expect((await copyEnvFiles(repo.dir, target)).sort()).toEqual([".env", "apps/api/.env.local"]);
+  });
+});
+
+describe("linkPaths", () => {
+  const linked = () => ({ ...spec(), linkPaths: ["node_modules", "web/node_modules"] });
+
+  beforeEach(() => {
+    mkdirSync(join(repo.dir, "node_modules", "left-pad"), { recursive: true });
+    writeFileSync(join(repo.dir, "node_modules", "left-pad", "index.js"), "x\n");
+  });
+
+  test("links each path the main checkout has, skips the rest, and keeps git status clean", async () => {
+    // The fixture ignores only `.env`, so git sees the link unless Marshall excludes it.
+    const path = await createWorktree(linked());
+    const link = join(path, "node_modules");
+    expect(lstatSync(link).isSymbolicLink()).toBe(true);
+    expect(readlinkSync(link)).toBe(realpathSync(join(repo.dir, "node_modules")));
+    expect(readFileSync(join(link, "left-pad", "index.js"), "utf8")).toBe("x\n");
+    expect(existsSync(join(path, "web"))).toBe(false);
+    expect(git(["status", "--porcelain"], path)).toBe("");
+    const exclude = readFileSync(join(repo.dir, ".git", "info", "exclude"), "utf8");
+    expect(exclude.split("\n")).toContain("/node_modules");
+  });
+
+  test("relinks on a bounce, and removing the worktree leaves the shared folder alone", async () => {
+    const path = await createWorktree(linked());
+    rmSync(path, { recursive: true, force: true });
+    expect(lstatSync(join(await reuseWorktree(linked()), "node_modules")).isSymbolicLink()).toBe(
+      true,
+    );
+    await removeWorktree(repo.dir, path);
+    expect(existsSync(join(repo.dir, "node_modules", "left-pad", "index.js"))).toBe(true);
+  });
+
+  test("never replaces what the worktree already has, and adds an exclude line once", async () => {
+    const path = await createWorktree(spec());
+    mkdirSync(join(path, "node_modules"));
+    expect(await linkSharedPaths(repo.dir, path, ["node_modules"])).toEqual([]);
+    rmSync(join(path, "node_modules"), { recursive: true });
+    expect(await linkSharedPaths(repo.dir, path, ["node_modules"])).toEqual(["node_modules"]);
+    rmSync(join(path, "node_modules"));
+    await linkSharedPaths(repo.dir, path, ["node_modules"]);
+    const exclude = readFileSync(join(repo.dir, ".git", "info", "exclude"), "utf8");
+    expect(exclude.split("\n").filter((l) => l === "/node_modules")).toHaveLength(1);
+  });
+
+  test("adds no exclude line when the repo already ignores the link", async () => {
+    git(["checkout", "-q", "main"], repo.dir);
+    writeFileSync(join(repo.dir, ".gitignore"), ".env\n.env.*\nnode_modules\n");
+    git(["commit", "-q", "-am", "ignore node_modules"], repo.dir);
+    git(["push", "-q", "origin", "main"], repo.dir);
+    await createWorktree(linked());
+    const exclude = join(repo.dir, ".git", "info", "exclude");
+    const text = existsSync(exclude) ? readFileSync(exclude, "utf8") : "";
+    expect(text).not.toContain("/node_modules");
+  });
+
+  test("refuses a path outside the repo", async () => {
+    const path = await createWorktree(spec());
+    await expect(linkSharedPaths(repo.dir, path, ["../escape"])).rejects.toThrow(/inside the repo/);
   });
 });

@@ -1,4 +1,4 @@
-// Last edited: 2026-10-18 16:01 PDT
+// Last edited: 2026-10-19 22:50 PDT
 // Typed loaders for marshall.config.json (committed, JSONC: `//` and `/* */` comments allowed)
 // and process.env (from .env).
 
@@ -62,6 +62,13 @@ const RESERVED_STATES = [TODO_STATE, IN_PROGRESS_STATE, DONE_STATE];
 
 const envVarName = /^[A-Z][A-Z0-9_]*$/;
 
+const linkPath = z
+  .string()
+  .min(1)
+  .refine((p) => !p.startsWith("/") && !p.split("/").includes(".."), {
+    message: "must be a path inside the repo",
+  });
+
 /** One repo Marshall may open worktrees and PRs in. */
 export const RepoSchema = z
   .object({
@@ -72,6 +79,11 @@ export const RepoSchema = z
     baseBranch: z.string().min(1).default("main"),
     /** Host ports this repo's Compose file reads from env; merged over the top-level `services`. */
     services: z.record(z.string().regex(envVarName), port).optional(),
+    /**
+     * Ignored paths, relative to the repo, that each new worktree links to instead of rebuilding,
+     * for example `node_modules`. Worktrees share them, so an install in one changes them for all.
+     */
+    linkPaths: z.array(linkPath).optional(),
   })
   .strict();
 

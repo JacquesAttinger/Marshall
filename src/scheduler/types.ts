@@ -1,4 +1,4 @@
-// Last edited: 2026-10-18 13:17 PDT
+// Last edited: 2026-10-19 22:50 PDT
 // Shapes shared by the scheduler, the caps, and step 08. A Claim is one row of the `claims` table.
 
 import type { Database } from "bun:sqlite";
@@ -87,6 +87,8 @@ export interface WorktreeSpec {
   repoPath: string;
   branch: string;
   baseBranch: string;
+  /** Repo-relative paths to symlink from the main checkout (`RepoConfig.linkPaths`). */
+  linkPaths?: readonly string[];
 }
 
 /** The two git operations a start needs, injected so scheduler tests run without git. */

@@ -1,4 +1,4 @@
-<!-- Last edited: 2026-10-18 15:59 PDT -->
+<!-- Last edited: 2026-10-19 23:05 PDT -->
 
 # Hemut overnight queue — runbook
 
@@ -102,7 +102,13 @@ Agents that already run keep running; `marshall kill <ID>` stops one.
    The Hemut config names statuses that already exist (`states`), so setup creates only the eight labels, including `marshall:queued` and `marshall:has-plan`.
    If you change `states` to names the team lacks, setup tries to create them, and that needs a workspace admin.
 6. Fill in each repo's Compose host ports in `services`, then restart the services.
-7. Clone `hemut-ai-harness` next to the repos, or set `HEMUT_ATLAS_DIR`, so agents can read the Architecture Atlas.
+7. Run `npm ci` in the main `Command` checkout.
+   The config sets `linkPaths: ["node_modules"]` for `Command`, so every agent worktree links to that folder instead of installing its own (1.4 GB).
+   `npm ci` needs `~/.npmrc` with a GitHub token that has `read:packages`, for `@hemut2025/design-system`.
+   The linked folder is only as new as the last `npm ci`.
+   After `Command`'s `package-lock.json` changes on `staging`, pull the main checkout and run `npm ci` again, or agents type-check against old packages.
+   All worktrees share the folder, so an agent that runs `npm install` changes it for every other agent too.
+8. Clone `hemut-ai-harness` next to the repos, or set `HEMUT_ATLAS_DIR`, so agents can read the Architecture Atlas.
    If the atlas is missing, the agent says so in the follow-ups.
 
 ## Rollout

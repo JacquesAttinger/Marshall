@@ -1,4 +1,4 @@
-<!-- Last edited: 2026-10-18 15:59 PDT -->
+<!-- Last edited: 2026-10-19 23:05 PDT -->
 
 <a id="readme-top"></a>
 
@@ -287,6 +287,7 @@ Three config settings let Marshall run unattended against a workspace with real 
 
 - `pickup: "labeled"` takes only issues that carry `marshall:queued`. The default, `"assigned"`, takes every Todo issue assigned to you.
 - `repos` lists several repos (slug, path, base branch). A plan names the repos it touches in a `## Repos touched` section, and Marshall opens one worktree and one PR per repo on one branch. The PR is merged only by a human.
+- A repo entry may set `linkPaths`, for example `["node_modules"]`. Each new worktree then gets a symlink to that folder in the main checkout instead of an empty one, so an agent can run the repo's checks without a fresh install.
 - `marshall enqueue` queues a finished plan. A `marshall:has-plan` issue skips the planner.
 - `states` names the two Linear statuses Marshall uses (default `Needs Verification` and `Blocked`), for a team where only an admin can add statuses.
 
@@ -301,7 +302,7 @@ A tick lists the pickable issues (Todo, assigned to me), orders them by priority
 
 1. Skips it while a claim row is still live, or blocks it when it has bounced `maxBounces` times.
 2. Checks the caps in `src/caps.ts`: `maxAgents` live claims, `dailyStartCap` starts on the local calendar day, `windowStartCap` starts in the last `windowHours`.
-3. Writes a `claiming` row, claims in Linear, creates the worktree (a sibling `<repo>-<branch>` off `origin/<baseBranch>` with `.env` copied in), and starts the agent.
+3. Writes a `claiming` row, claims in Linear, creates the worktree (a sibling `<repo>-<branch>` off `origin/<baseBranch>` with `.env` copied in and any `linkPaths` linked in), and starts the agent.
 
 `bin/marshall queue` shows exactly what the next tick would do.
 

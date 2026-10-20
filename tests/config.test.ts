@@ -1,4 +1,4 @@
-// Last edited: 2026-10-18 15:59 PDT
+// Last edited: 2026-10-19 22:55 PDT
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
@@ -241,6 +241,26 @@ describe("states", () => {
       expect(() => parseConfig({ ...minimal(), states: { blocked: name } })).toThrow(
         new RegExp(`"${name}" is a status Marshall uses`),
       );
+    }
+  });
+});
+
+describe("linkPaths", () => {
+  const withLinks = (linkPaths: string[]) => ({
+    workspace: "hemut",
+    teamId: "team-1",
+    repos: [{ slug: "Command", repoPath: home.dir, linkPaths }],
+  });
+
+  test("is optional, and keeps repo-relative paths", () => {
+    expect(parseConfig(minimal()).repos[0]?.linkPaths).toBeUndefined();
+    const config = parseConfig(withLinks(["node_modules", "apps/web/node_modules"]));
+    expect(config.repos[0]?.linkPaths).toEqual(["node_modules", "apps/web/node_modules"]);
+  });
+
+  test("refuses a path outside the repo", () => {
+    for (const bad of ["/etc", "../other", "a/../../b", ""]) {
+      expect(() => parseConfig(withLinks([bad]))).toThrow(ConfigError);
     }
   });
 });

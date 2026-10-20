@@ -1,4 +1,4 @@
-// Last edited: 2026-10-18 15:59 PDT
+// Last edited: 2026-10-19 22:55 PDT
 // Marshall's settings for the Hemut workspace (docs/hemut_runbook.md). Run it on the always-on VM:
 // register it with `marshall project import --name hemut marshall.hemut.config.json`, or point
 // MARSHALL_CONFIG at it. Comments are allowed (JSONC); secrets go in .env, not in this file.
@@ -28,7 +28,14 @@
   // EDI-Hub and Hemut-MCP use classic protection that a non-admin cannot read; zones and
   // hemut-dashboard have no `staging` branch.
   "repos": [
-    { "slug": "Command", "repoPath": "~/code/hemut3/Command", "baseBranch": "staging" },
+    // `linkPaths`: each worktree links the main checkout's installed packages instead of running
+    // `npm ci` again (1.4 GB). Run `npm ci` in the main checkout after a package.json change.
+    {
+      "slug": "Command",
+      "repoPath": "~/code/hemut3/Command",
+      "baseBranch": "staging",
+      "linkPaths": ["node_modules"]
+    },
     { "slug": "DB-Migrations", "repoPath": "~/code/hemut3/DB-Migrations", "baseBranch": "staging" },
     {
       "slug": "QuoteFlow_Backend",

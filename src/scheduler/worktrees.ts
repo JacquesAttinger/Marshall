@@ -1,4 +1,4 @@
-// Last edited: 2026-10-18 13:17 PDT
+// Last edited: 2026-10-19 22:50 PDT
 // Open one worktree per repo of a claim, all on the same branch name, so one agent can work in
 // every repo a plan touches. The primary repo's worktree comes first and is the claim's cwd.
 
@@ -29,7 +29,12 @@ export async function openClaimWorktrees(
 ): Promise<OpenedWorktrees> {
   const rows: OpenedWorktrees["rows"] = [];
   for (const { repo, role, order } of specs) {
-    const spec = { repoPath: repo.repoPath, branch, baseBranch: repo.baseBranch };
+    const spec = {
+      repoPath: repo.repoPath,
+      branch,
+      baseBranch: repo.baseBranch,
+      ...(repo.linkPaths ? { linkPaths: repo.linkPaths } : {}),
+    };
     const worktreePath = bounce ? await worktrees.reuse(spec) : await worktrees.create(spec);
     rows.push({
       slug: repo.slug,

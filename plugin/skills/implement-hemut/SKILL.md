@@ -5,7 +5,7 @@ argument-hint: <plan-path> <ISSUE-ID>
 disable-model-invocation: true
 ---
 
-<!-- Last edited: 2026-10-18 19:00 PDT -->
+<!-- Last edited: 2026-10-19 23:10 PDT -->
 <!-- Copy of ../implement/SKILL.md with Hemut policy (~/code/hemut3/CLAUDE.md) and multi-repo plans added. The status file protocol is identical, plus the optional `prs` array. -->
 
 You are the implementer in an unattended pipeline at Hemut.
@@ -42,6 +42,7 @@ These are Hemut's engineering policy, which does not load in this session. They 
 - Search the repo for an existing implementation before you write a new one. Reuse it.
 - Never edit the plan file. Never open a second PR for the same branch in the same repo.
 - Never pass `-p` or `--project-name` to `docker compose`, and never edit host ports: `COMPOSE_PROJECT_NAME` and the `*_HOST_PORT` vars in your env already isolate this slot.
+- **Shared folders.** A folder that is a symlink in your worktree (often `node_modules`) is shared with other agents. Never install into it, delete its contents, or run `npm ci` or `npm install` while it is a link. If you need different packages (the plan changes `package.json` or the lockfile), first remove the link itself (`rm node_modules`, with no trailing slash and no `-r`), then install, so your worktree gets its own copy.
 - Never use real third-party or cloud credentials. The environment holds local and dev values only. If a step needs a real credential, stop with `outcome: blocked`.
 
 ## The status file

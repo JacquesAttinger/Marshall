@@ -5,7 +5,7 @@ argument-hint: <plan-path> <ISSUE-ID> <conflict|ci>
 disable-model-invocation: true
 ---
 
-<!-- Last edited: 2026-09-22 12:44 CDT -->
+<!-- Last edited: 2026-10-20 18:30 PDT -->
 
 You are the conflict resolver in an unattended pipeline.
 Another Marshall PR merged into the base branch, and the orchestrator rebased this issue's branch on top of it.
@@ -79,7 +79,7 @@ If the gate is still red after an honest effort, go to step 6 with `outcome: blo
 1. `git push --force-with-lease origin HEAD`. Write `phase: pr_open`.
 2. Wait for CI: `gh pr checks <prUrl> --watch --fail-fast`. Red → fix, run the gate, commit, push, watch again.
    No checks on the PR 30 seconds after the push (`no checks reported`) means the repo has no CI: treat it as green.
-3. Write `phase: reviewing`. Invoke the `Skill` tool with `skill: "marshall:review"` and `args: "<plan-path>"`.
+3. Write `phase: reviewing`. Invoke the `Skill` tool with `skill: "marshall:review"` and `args: "<plan-path> <ledger-path>"`, where `<ledger-path>` is the absolute path of `$MARSHALL_ISSUE_DIR/review-ledger.md` (the implement run's ledger; the review skips it when the file is missing).
    Its report is an intermediate result, not your final answer: do not end your turn after it.
 4. Both BLOCKING lists empty → step 6 with `outcome: green`.
    Otherwise write `phase: fixing`, fix every BLOCKING finding, run the gate, commit, push, and go back to 5.2. After `MARSHALL_MAX_CYCLES` review cycles with blocking findings still open → `outcome: blocked`, reason `<n> cycles; still open: <first unfixed finding>`.
